@@ -109,7 +109,8 @@ dependencies {
     // SharedPreferences sécurisées (optionnel)
     implementation(libs.androidx.security.crypto)
 
-
+    //Health connect
+    implementation(libs.androidx.connect.client)
 
 
     testImplementation(libs.junit)

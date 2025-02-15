@@ -28,5 +28,8 @@ val AppTextInputColors: TextFieldColors
         errorLabelColor = MaterialTheme.colorScheme.onBackground,
         errorSupportingTextColor = MaterialTheme.colorScheme.error,
         focusedSupportingTextColor = BlueBlack,
-        unfocusedSupportingTextColor = LightGray
+        unfocusedSupportingTextColor = LightGray,
+        focusedTextColor = BlueBlack,
+        unfocusedTextColor = BlueBlack,
+        disabledTextColor = BlueBlack.copy(alpha = 0.5f)
     )

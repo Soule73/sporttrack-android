@@ -2,13 +2,14 @@ package com.stapp.sporttrack.ui.screens.auth
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.stapp.sporttrack.ui.components.InitViewModel
-import com.stapp.sporttrack.utils.checkAuthentication
 import com.stapp.sporttrack.viewmodel.RegistrationViewModel
 
 class RegisterActivity : ComponentActivity() {
@@ -19,6 +20,15 @@ class RegisterActivity : ComponentActivity() {
 
         val isFromLoginActivity = intent.getBooleanExtra("isFromLoginActivity", false)
         val startDestination = if (isFromLoginActivity) "step1" else "step0"
+
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(
+                scrim = android.graphics.Color.parseColor("#061428")
+            ),
+            navigationBarStyle = SystemBarStyle.dark(
+                scrim = android.graphics.Color.parseColor("#061428"),
+            )
+        )
 
         setContent {
             InitViewModel(context = this) { navController, viewModel ->
@@ -38,11 +48,12 @@ fun RegisterNavHost(
     viewModel: RegistrationViewModel,
     startDestination: String
 ) {
-    NavHost(navController = navController, startDestination = startDestination) {
+    NavHost(navController = navController, startDestination = startDestination,
+        ) {
         composable("step0") { RegisterStep0(navController) }
         composable("step1") { RegisterStep1(navController, viewModel) }
         composable("step2") { RegisterStep2(navController, viewModel) }
-        composable("step3") { RegisterStep3(viewModel) }
+        composable("step3") { RegisterStep3(navController,viewModel) }
     }
 }
 

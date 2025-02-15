@@ -39,7 +39,7 @@ class AuthRepository(private val sharedPreferences: SharedPreferences) {
     }
 
     private fun getToken(): String? {
-        return sharedPreferences.getString("AUTH_TOKEN", null)
+        return sharedPreferences.getString(SharedPreferencesConstants.AUTH_TOKEN, null)
     }
 
     suspend fun register(userRequest: UserRequest): Result<AuthResponse> {
@@ -50,19 +50,23 @@ class AuthRepository(private val sharedPreferences: SharedPreferences) {
                 if (body != null) {
                     Result.success(body)
                 } else {
-                    Result.failure(Exception("Réponse du serveur vide."))
+                    // Réponse du serveur vide
+                    Result.failure(Exception("Réponse du serveur vide"))
                 }
             } else {
                 val errorBody = response.errorBody()?.string()
                 if (errorBody != null) {
                     val errorResponse = Json.decodeFromString<ErrorResponse>(errorBody)
-                    Result.failure(Exception(errorResponse.errors.toString()))
+                    Result.failure(CustomException(errorResponse)) // Utilisation de CustomException pour encapsuler ErrorResponse
                 } else {
-                    Result.failure(Exception("Erreur inconnue lors de l'inscription."))
+                    // Erreur inconnue lors de l'inscription
+                    Result.failure(CustomException(ErrorResponse(mapOf("error" to "Erreur inconnue lors de l'inscription"))))
                 }
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            // Créer un ErrorResponse pour les exceptions inattendues
+            val errorResponse = ErrorResponse(errors = mapOf("error" to (e.message ?: "Erreur inconnue")))
+            Result.failure(CustomException(errorResponse))
         }
     }
 
@@ -117,3 +121,6 @@ class AuthRepository(private val sharedPreferences: SharedPreferences) {
         }
     }
 }
+
+// Définir une CustomException pour encapsuler ErrorResponse
+class CustomException(val errorResponse: ErrorResponse) : Exception()

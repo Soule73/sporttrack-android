@@ -12,6 +12,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
+data class SystemBarStyle(
+    val backgroundColor: Color,
+    val contentColor: Color
+)
+
+val CustomStatusBarStyle = SystemBarStyle(
+    backgroundColor = Color.White, // Couleur de fond personnalisée
+    contentColor = BlueBlack       // Couleur de contenu personnalisée
+)
+
+val CustomNavigationBarStyle = SystemBarStyle(
+    backgroundColor = Color.White, // Couleur de fond personnalisée
+    contentColor = BlueBlack        // Couleur de contenu personnalisée
+)
 
 private val DarkColorScheme = darkColorScheme(
     primary = LightPurple,

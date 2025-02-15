@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
@@ -127,7 +128,8 @@ private fun Label(
         modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
-        Text(text = "${value.roundToInt()}$suffixLabel")
+        Text(text = "${value.roundToInt()}$suffixLabel",
+            fontSize = MaterialTheme.typography.bodySmall.fontSize)
     }
 }
 

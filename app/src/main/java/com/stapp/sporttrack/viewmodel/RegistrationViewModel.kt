@@ -6,14 +6,17 @@ import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.stapp.sporttrack.data.models.AuthResponse
+import com.stapp.sporttrack.data.models.ErrorResponse
 import com.stapp.sporttrack.data.models.LoginRequest
 import com.stapp.sporttrack.data.models.UserRequest
 import com.stapp.sporttrack.data.models.UserResponse
 import com.stapp.sporttrack.data.repository.AuthRepository
+import com.stapp.sporttrack.data.repository.CustomException
 import com.stapp.sporttrack.ui.screens.auth.LoginActivity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 
 
 class RegistrationViewModel(private val authRepository: AuthRepository) : ViewModel() {
@@ -35,6 +38,9 @@ class RegistrationViewModel(private val authRepository: AuthRepository) : ViewMo
     private val _verifyTokenResult = MutableStateFlow<Result<UserResponse>?>(null)
     val verifyTokenResult: StateFlow<Result<UserResponse>?> = _verifyTokenResult
 
+    private val _registrationError = MutableStateFlow<Map<String, String>?>(null)
+    val registrationError: StateFlow<Map<String, String>?> = _registrationError
+
     fun register() {
         viewModelScope.launch {
             val userRequest = UserRequest(
@@ -44,14 +50,28 @@ class RegistrationViewModel(private val authRepository: AuthRepository) : ViewMo
                 lastName = lastName,
                 birthDate = null, // Optional
                 gender = gender,
-                weight = weight.toDouble(),
-                height = height.toDouble()
+                weight =if(weight.toDouble()>0) weight.toDouble() else null,
+                height =if(height.toDouble()>0) height.toDouble() else null,
             )
             println("UserRequest: $userRequest")
 
             val result = authRepository.register(userRequest)
-            _registrationResult.value = result
+            if (result.isSuccess) {
+                _registrationResult.value = result
+                _registrationError.value = null
+            }
+            else {
+                val error = result.exceptionOrNull()
+                if (error is CustomException) {
+                    _registrationError.value = parseErrorMessages(error)
+                } else {
+                    _registrationError.value = mapOf("error" to "Erreur inconnue")
+                }
+//                println("Erreur lors de l'inscription ---- ${registrationError.value?.get("email")}")
+            }
+
         }
+
     }
 
     fun login(email: String, password: String) {
@@ -77,6 +97,15 @@ class RegistrationViewModel(private val authRepository: AuthRepository) : ViewMo
             val result = authRepository.verifyToken()
             _verifyTokenResult.value = result
         }
+    }
+
+    private fun parseErrorMessages(exception: CustomException): Map<String, String> {
+        return exception.errorResponse.errors
+    }
+
+
+    fun clearRegistrationError() {
+        _registrationError.value = null
     }
 
 }

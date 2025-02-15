@@ -6,23 +6,32 @@ import androidx.activity.ComponentActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,6 +39,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -42,11 +52,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.stapp.sporttrack.R
-import com.stapp.sporttrack.ui.components.ClickableTextRow
 import com.stapp.sporttrack.ui.components.CustomTextField
 import com.stapp.sporttrack.ui.theme.BlueBlack
 import com.stapp.sporttrack.ui.theme.LightGray
 import com.stapp.sporttrack.viewmodel.RegistrationViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun RegisterStep1(navController: NavController, viewModel: RegistrationViewModel) {
@@ -63,12 +73,36 @@ fun RegisterStep1(navController: NavController, viewModel: RegistrationViewModel
 
     val configuration = LocalConfiguration.current
 
+    val scrollState = rememberScrollState()
+    val coroutineScope = rememberCoroutineScope()
+    val keyboardHeight = WindowInsets.ime.getBottom(LocalDensity.current)
+
+    val localContext = LocalConfiguration.current
+
+    val registrationError by viewModel.registrationError.collectAsState()
+
+    LaunchedEffect(key1 = keyboardHeight) {
+        coroutineScope.launch {
+            scrollState.scrollBy(keyboardHeight.toFloat())
+        }
+    }
+
+
     Column(
         modifier = Modifier
+            .imePadding()
+            .verticalScroll(scrollState)
             .fillMaxSize(),
         verticalArrangement = Arrangement.Center
     ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp)) {
+        Column(
+            modifier = Modifier.padding(
+                top = localContext.screenHeightDp.dp / 8,
+                start = 16.dp,
+                end = 16.dp,
+                bottom = 20.dp
+            )
+        ) {
             Text(
                 text = "Créer un compte",
                 style = TextStyle(
@@ -122,6 +156,7 @@ fun RegisterStep1(navController: NavController, viewModel: RegistrationViewModel
                 onValueChange = {
                     email = it
                     isEmailValid = android.util.Patterns.EMAIL_ADDRESS.matcher(it).matches()
+                    viewModel.clearRegistrationError()
                 },
                 leadingIcon = painterResource(id = R.drawable.baseline_mail_outline_24),
                 label = { Text("Email") },
@@ -133,7 +168,14 @@ fun RegisterStep1(navController: NavController, viewModel: RegistrationViewModel
                     style = MaterialTheme.typography.bodySmall
                 )
             }
-            Spacer(modifier = Modifier.height(20.dp))
+            if (registrationError?.containsKey("email") == true) {
+                Text(
+                    text = registrationError!!["email"]!!,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            Spacer(modifier = Modifier.height(10.dp))
             CustomTextField(
                 modifier = Modifier.fillMaxWidth(),
                 value = firstName,
@@ -151,7 +193,7 @@ fun RegisterStep1(navController: NavController, viewModel: RegistrationViewModel
                     style = MaterialTheme.typography.bodySmall
                 )
             }
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             CustomTextField(
                 modifier = Modifier.fillMaxWidth(),
                 value = lastName,
@@ -169,12 +211,13 @@ fun RegisterStep1(navController: NavController, viewModel: RegistrationViewModel
                     style = MaterialTheme.typography.bodySmall
                 )
             }
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(20.dp))
             Button(
                 onClick = {
                     viewModel.email = email
                     viewModel.firstName = firstName
                     viewModel.lastName = lastName
+                    viewModel.clearRegistrationError()
                     navController.navigate("step2")
                 },
                 enabled = isFormValid,
@@ -184,7 +227,7 @@ fun RegisterStep1(navController: NavController, viewModel: RegistrationViewModel
                 colors = ButtonDefaults.buttonColors(
                     containerColor = BlueBlack,
                     contentColor = LightGray,
-                    disabledContentColor = BlueBlack,
+                    disabledContentColor = BlueBlack.copy(alpha = 0.5f),
                     disabledContainerColor = LightGray
                 )
             ) {
@@ -196,7 +239,6 @@ fun RegisterStep1(navController: NavController, viewModel: RegistrationViewModel
                     fontSize = MaterialTheme.typography.titleMedium.fontSize
                 )
             }
-            Spacer(modifier = Modifier.height(20.dp))
             LoginRow(context = LocalContext.current)
         }
     }
@@ -229,7 +271,7 @@ fun LoginRow(context: Context) {
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 40.dp),
+            .padding(vertical = 10.dp),
 
         ) {
         BasicText(

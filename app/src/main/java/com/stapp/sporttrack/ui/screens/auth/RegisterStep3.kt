@@ -8,46 +8,62 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.stapp.sporttrack.R
 import com.stapp.sporttrack.ui.components.PasswordTextField
 import com.stapp.sporttrack.ui.screens.WelcomeActivity
 import com.stapp.sporttrack.ui.theme.BlueBlack
 import com.stapp.sporttrack.ui.theme.LightGray
+import com.stapp.sporttrack.utils.hideKeyboard
 import com.stapp.sporttrack.utils.saveUserDataAndToken
 import com.stapp.sporttrack.viewmodel.RegistrationViewModel
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 @SuppressLint("UnrememberedMutableInteractionSource", "UseOfNonLambdaOffsetOverload")
 @Composable
-fun RegisterStep3(viewModel: RegistrationViewModel) {
+fun RegisterStep3(navController: NavController, viewModel: RegistrationViewModel) {
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var hidePassword by remember { mutableStateOf(true) }
@@ -55,10 +71,42 @@ fun RegisterStep3(viewModel: RegistrationViewModel) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
 
-    HandleRegistrationResult(viewModel, context)
+    var isLoading by remember { mutableStateOf(false) }
+
+    val registrationError by viewModel.registrationError.collectAsState()
+
+    LaunchedEffect(registrationError) {
+        if (registrationError?.containsKey("error") == true) {
+            Toast.makeText(context, registrationError!!["error"], Toast.LENGTH_SHORT).show()
+            viewModel.clearRegistrationError()
+        } else if (registrationError?.containsKey("email") == true) {
+            Toast.makeText(context, registrationError!!["email"], Toast.LENGTH_SHORT).show()
+            navController.navigate("step1")
+        }
+    }
+
+
+    fun setIsLoadingFalse() {
+        isLoading = false
+    }
+
+    HandleRegistrationResult(viewModel, context, setIsLoadingFalse())
+
+    val scrollState = rememberScrollState()
+    val coroutineScope = rememberCoroutineScope()
+    val keyboardHeight = WindowInsets.ime.getBottom(LocalDensity.current)
+
+    LaunchedEffect(key1 = keyboardHeight) {
+        coroutineScope.launch {
+            scrollState.scrollBy(keyboardHeight.toFloat())
+        }
+    }
 
     Column(
         modifier = Modifier
+
+            .imePadding()
+            .verticalScroll(scrollState)
             .fillMaxSize(),
         verticalArrangement = Arrangement.Center
     ) {
@@ -78,17 +126,23 @@ fun RegisterStep3(viewModel: RegistrationViewModel) {
             password = password,
             confirmPassword = confirmPassword,
             context = context,
+            isLoading = isLoading,
             onRegister = {
+                isLoading = true
+                hideKeyboard(context)
                 viewModel.password = password
-                viewModel.register() }
+                viewModel.register()
+            }
         )
     }
 }
 
 @Composable
-fun HandleRegistrationResult(viewModel: RegistrationViewModel, context: Context) {
+fun HandleRegistrationResult(viewModel: RegistrationViewModel, context: Context, onRegister: Unit) {
     LaunchedEffect(viewModel.registrationResult) {
+
         viewModel.registrationResult.collectLatest { result ->
+            onRegister.run { }
             result?.onSuccess { authResponse ->
                 saveUserDataAndToken(context, authResponse)
                 context.startActivity(Intent(context, WelcomeActivity::class.java).apply {
@@ -99,7 +153,7 @@ fun HandleRegistrationResult(viewModel: RegistrationViewModel, context: Context)
             }?.onFailure { exception ->
                 Toast.makeText(context, exception.message, Toast.LENGTH_SHORT).show()
 
-                println("Erreur lors de l'inscription : ${exception.message}")
+                println("Erreur lors de l'inscription ::: ${exception.message}")
             }
         }
     }
@@ -107,7 +161,16 @@ fun HandleRegistrationResult(viewModel: RegistrationViewModel, context: Context)
 
 @Composable
 fun HeaderSection() {
-    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp)) {
+    val localContext = LocalConfiguration.current
+
+    Column(
+        modifier = Modifier.padding(
+            top = localContext.screenHeightDp.dp / 8,
+            start = 16.dp,
+            end = 16.dp,
+            bottom = 20.dp
+        )
+    ) {
         Text(
             text = "Créer un mot de passe",
             style = TextStyle(
@@ -138,7 +201,7 @@ fun SecurityImageSection(configuration: Configuration) {
     ) {
         Image(
             painter = painterResource(id = R.drawable.icons_security),
-            contentDescription = "Welcome Image",
+            contentDescription = "image field security",
             modifier = Modifier
                 .background(
                     brush = Brush.verticalGradient(
@@ -150,7 +213,6 @@ fun SecurityImageSection(configuration: Configuration) {
                     )
                 )
                 .fillMaxWidth()
-                .padding(horizontal = 40.dp)
         )
     }
 }
@@ -190,10 +252,14 @@ fun RegisterButton(
     password: String,
     confirmPassword: String,
     context: Context,
-    onRegister: () -> Unit
+    onRegister: () -> Unit,
+    isLoading: Boolean = false
 ) {
-    Spacer(modifier = Modifier.height(40.dp))
+    val enable = password.isNotBlank() && confirmPassword.isNotBlank() && !isLoading
+
+    Spacer(modifier = Modifier.height(20.dp))
     Button(
+        enabled = enable,
         onClick = {
             when {
                 password != confirmPassword -> {
@@ -221,16 +287,39 @@ fun RegisterButton(
         colors = ButtonDefaults.buttonColors(
             containerColor = BlueBlack,
             contentColor = LightGray,
-            disabledContentColor = BlueBlack,
+            disabledContentColor = BlueBlack.copy(alpha = 0.3f),
             disabledContainerColor = LightGray
         )
     ) {
-        Text(
-            "S'inscrire",
-            modifier = Modifier
-                .padding(vertical = 10.dp),
-            fontWeight = FontWeight.Bold,
-            fontSize = MaterialTheme.typography.titleMedium.fontSize
-        )
+        if (isLoading) {
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .padding(vertical = 10.dp)
+                    .fillMaxWidth(),
+            ) {
+                CircularProgressIndicator(
+                    color = BlueBlack.copy(alpha = 0.3f),
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp
+                )
+
+                Text(
+                    "Chargement...",
+                    modifier = Modifier
+                        .padding(start = 10.dp),
+                )
+            }
+        } else {
+            Text(
+                "S'inscrire",
+                modifier = Modifier
+                    .padding(vertical = 10.dp),
+                fontWeight = FontWeight.Bold,
+                fontSize = MaterialTheme.typography.titleMedium.fontSize
+            )
+        }
+
     }
 }

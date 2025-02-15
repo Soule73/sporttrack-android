@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.stapp.sporttrack.ui.theme.BlueBlack
 import com.stapp.sporttrack.ui.theme.LightGray
@@ -33,10 +34,12 @@ fun SliderComponent(
     minLabel: Float,
     maxLabel: Float,
     minIcon: Int,
-    maxIcon: Int
+    maxIcon: Int,
+    maxImageWidth: Dp=40.dp,
+    minImageWidth: Dp=40.dp
 ) {
     Column {
-        Text(label, style = MaterialTheme.typography.headlineSmall)
+        Text(label, style = MaterialTheme.typography.titleMedium)
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.Bottom,
@@ -45,12 +48,12 @@ fun SliderComponent(
             Image(
                 painter = painterResource(id = minIcon),
                 contentDescription = "Min",
-                modifier = Modifier.width(40.dp)
+                modifier = Modifier.width(minImageWidth)
             )
             Image(
                 painter = painterResource(id = maxIcon),
                 contentDescription = "Max",
-                modifier = Modifier.width(70.dp)
+                modifier = Modifier.width(maxImageWidth)
             )
         }
         CustomSlider(
@@ -64,7 +67,7 @@ fun SliderComponent(
                 CustomSliderDefaults.Thumb(
                     thumbValue = "",
                     color = Color.Transparent,
-                    size = 35.dp,
+                    size = 30.dp,
                     modifier = Modifier
                         .background(
                             LightGray,

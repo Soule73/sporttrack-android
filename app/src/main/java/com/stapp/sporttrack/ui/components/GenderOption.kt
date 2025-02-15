@@ -49,7 +49,7 @@ fun GenderOption(
             checked = selected,
             onCheckedChange = { onSelect() },
             modifier = Modifier
-                .size((configuration.screenWidthDp.dp / 5) * 1.8f)
+                .size((configuration.screenWidthDp.dp / 3))
                 .border(
                     width = 2.dp,
                     color = if (selected) Color.Transparent else LightGray,
@@ -77,7 +77,7 @@ fun GenderOption(
                         contentDescription = "Selected",
                         tint = Color.White,
                         modifier = Modifier
-                            .size(30.dp)
+                            .size(20.dp)
                             .background(BlueBlack, CircleShape)
                     )
                 }

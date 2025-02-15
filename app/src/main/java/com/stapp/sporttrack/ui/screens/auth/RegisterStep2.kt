@@ -58,6 +58,9 @@ fun RegisterStep2(navController: NavController, viewModel: RegistrationViewModel
 
     val isNextEnabled = gender.isNotEmpty()
 
+    val sliderWeightValue = if (weight > 0) weight else minWeight
+    val sliderHeightValue = if (height > 0) height else minHeight
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -67,14 +70,14 @@ fun RegisterStep2(navController: NavController, viewModel: RegistrationViewModel
         Text(
             text = "Donnez-nous quelques informations de base",
             style = TextStyle(
-                fontSize = 30.sp,
+                fontSize = 25.sp,
                 color = BlueBlack,
                 fontWeight = FontWeight.ExtraBold
             ),
             textAlign = TextAlign.Start,
         )
         Column {
-            Text("Genre", style = MaterialTheme.typography.headlineSmall)
+            Text("Genre", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(5.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -102,27 +105,31 @@ fun RegisterStep2(navController: NavController, viewModel: RegistrationViewModel
         Column {
             SliderComponent(
                 label = "Taille",
-                value = height,
+                value = sliderHeightValue,
                 valueRange = minHeight..maxHeight,
                 suffixLabel = heightSuffix,
                 onValueChange = { height = it },
                 minLabel = minHeight,
                 maxLabel = maxHeight,
                 minIcon = R.drawable.man,
-                maxIcon = R.drawable.man
+                maxIcon = R.drawable.man,
+                maxImageWidth = 50.dp,
+                minImageWidth = 30.dp
             )
         }
         Column {
             SliderComponent(
                 label = "Poids",
-                value = weight,
+                value = sliderWeightValue,
                 valueRange = minWeight..maxWeight,
                 suffixLabel = weightSuffix,
                 onValueChange = { weight = it },
                 minLabel = minWeight,
                 maxLabel = maxWeight,
                 minIcon = R.drawable.man,
-                maxIcon = R.drawable.big_man
+                maxIcon = R.drawable.big_man,
+                maxImageWidth = 30.dp,
+                minImageWidth = 30.dp
             )
         }
         Column(
@@ -139,13 +146,13 @@ fun RegisterStep2(navController: NavController, viewModel: RegistrationViewModel
                 colors = IconButtonDefaults.iconButtonColors(
                     containerColor = BlueBlack,
                     contentColor = LightGray,
-                    disabledContentColor = BlueBlack,
+                    disabledContentColor = BlueBlack.copy(alpha = 0.5f),
                     disabledContainerColor = LightGray
                 ),
                 enabled = isNextEnabled,
                 modifier = Modifier
-                    .width(70.dp)
-                    .height(70.dp)
+                    .width(50.dp)
+                    .height(50.dp)
                     .background(BlueBlack, CircleShape)
             ) {
                 Icon(
