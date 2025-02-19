@@ -1,15 +1,11 @@
 package com.stapp.sporttrack.ui.screens.auth
 
 import android.content.Context
-import android.content.Intent
-import androidx.activity.ComponentActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,7 +15,6 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -33,7 +28,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -41,17 +35,15 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.stapp.sporttrack.R
+import com.stapp.sporttrack.ui.LoginActivity
+import com.stapp.sporttrack.ui.components.AnnotatedClickableRow
 import com.stapp.sporttrack.ui.components.CustomTextField
 import com.stapp.sporttrack.ui.theme.BlueBlack
 import com.stapp.sporttrack.ui.theme.LightGray
@@ -256,42 +248,12 @@ fun RegisterStep1(navController: NavController, viewModel: RegistrationViewModel
 
 @Composable
 fun LoginRow(context: Context) {
-    val annotatedString = buildAnnotatedString {
-        append("Vous avez déjà un compte? ")
-
-        pushStringAnnotation(tag = "URL", annotation = "Se connecter")
-        withStyle(style = SpanStyle(color = BlueBlack, textDecoration = TextDecoration.Underline)) {
-            append("Se connecter")
-        }
-        pop()
-    }
-
-    Row(
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 10.dp),
-
-        ) {
-        BasicText(
-            text = annotatedString,
-            modifier = Modifier.clickable {
-                annotatedString.getStringAnnotations(
-                    tag = "URL",
-                    start = 0,
-                    end = annotatedString.length
-                )
-                    .firstOrNull()?.let { annotation ->
-                        if (annotation.item == "Se connecter") {
-                            val intent = Intent(context, LoginActivity::class.java).apply {
-                                putExtra("checkAuthentication", false)
-                            }
-                            context.startActivity(intent)
-                            (context as ComponentActivity).finish()
-                        }
-                    }
-            }
-        )
+    AnnotatedClickableRow(
+        context = context,
+        questionText = "Vous avez déjà un compte? ",
+        actionText = "Se connecter",
+        targetActivity = LoginActivity::class.java
+    ) {
+        putExtra("checkAuthentication", false)
     }
 }

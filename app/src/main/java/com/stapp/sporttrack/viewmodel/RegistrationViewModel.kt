@@ -6,17 +6,15 @@ import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.stapp.sporttrack.data.models.AuthResponse
-import com.stapp.sporttrack.data.models.ErrorResponse
 import com.stapp.sporttrack.data.models.LoginRequest
 import com.stapp.sporttrack.data.models.UserRequest
 import com.stapp.sporttrack.data.models.UserResponse
 import com.stapp.sporttrack.data.repository.AuthRepository
 import com.stapp.sporttrack.data.repository.CustomException
-import com.stapp.sporttrack.ui.screens.auth.LoginActivity
+import com.stapp.sporttrack.ui.LoginActivity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
 
 
 class RegistrationViewModel(private val authRepository: AuthRepository) : ViewModel() {
@@ -50,8 +48,8 @@ class RegistrationViewModel(private val authRepository: AuthRepository) : ViewMo
                 lastName = lastName,
                 birthDate = null, // Optional
                 gender = gender,
-                weight =if(weight.toDouble()>0) weight.toDouble() else null,
-                height =if(height.toDouble()>0) height.toDouble() else null,
+                weight = if (weight.toDouble() > 0) weight.toDouble() else null,
+                height = if (height.toDouble() > 0) height.toDouble() else null,
             )
             println("UserRequest: $userRequest")
 
@@ -59,8 +57,7 @@ class RegistrationViewModel(private val authRepository: AuthRepository) : ViewMo
             if (result.isSuccess) {
                 _registrationResult.value = result
                 _registrationError.value = null
-            }
-            else {
+            } else {
                 val error = result.exceptionOrNull()
                 if (error is CustomException) {
                     _registrationError.value = parseErrorMessages(error)

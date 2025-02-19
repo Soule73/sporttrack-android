@@ -26,7 +26,8 @@ android {
 
     defaultConfig {
         applicationId = "com.stapp.sporttrack"
-        minSdk = 21
+        minSdk = 26
+        // minSdk = 21
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -71,9 +72,13 @@ android {
 }
 
 dependencies {
-
+    implementation(libs.ui)
+    implementation(libs.material3)
+    implementation(libs.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
@@ -82,9 +87,6 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.compose)
 
-    implementation(libs.ui)
-    implementation(libs.material3)
-    implementation(libs.ui.tooling.preview)
     // OkHttp pour les requêtes réseau
     implementation(libs.okhttp)
 
@@ -111,6 +113,8 @@ dependencies {
 
     //Health connect
     implementation(libs.androidx.connect.client)
+
+    implementation("com.github.Philjay:MPAndroidChart:v3.1.0")
 
 
     testImplementation(libs.junit)

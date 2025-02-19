@@ -65,7 +65,8 @@ class AuthRepository(private val sharedPreferences: SharedPreferences) {
             }
         } catch (e: Exception) {
             // Créer un ErrorResponse pour les exceptions inattendues
-            val errorResponse = ErrorResponse(errors = mapOf("error" to (e.message ?: "Erreur inconnue")))
+            val errorResponse =
+                ErrorResponse(errors = mapOf("error" to (e.message ?: "Erreur inconnue")))
             Result.failure(CustomException(errorResponse))
         }
     }
@@ -97,6 +98,7 @@ class AuthRepository(private val sharedPreferences: SharedPreferences) {
                 if (body != null) {
                     Result.success(body)
                 } else {
+                    logout()
                     Result.failure(Exception("Réponse du serveur vide."))
                 }
             } else {
@@ -122,5 +124,5 @@ class AuthRepository(private val sharedPreferences: SharedPreferences) {
     }
 }
 
-// Définir une CustomException pour encapsuler ErrorResponse
+// CustomException pour encapsuler ErrorResponse
 class CustomException(val errorResponse: ErrorResponse) : Exception()

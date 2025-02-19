@@ -52,7 +52,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.stapp.sporttrack.R
 import com.stapp.sporttrack.ui.components.PasswordTextField
-import com.stapp.sporttrack.ui.screens.WelcomeActivity
+import com.stapp.sporttrack.ui.WelcomeActivity
 import com.stapp.sporttrack.ui.theme.BlueBlack
 import com.stapp.sporttrack.ui.theme.LightGray
 import com.stapp.sporttrack.utils.hideKeyboard

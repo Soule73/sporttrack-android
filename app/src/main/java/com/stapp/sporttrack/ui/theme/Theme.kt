@@ -17,40 +17,40 @@ data class SystemBarStyle(
     val contentColor: Color
 )
 
-val CustomStatusBarStyle = SystemBarStyle(
-    backgroundColor = Color.White, // Couleur de fond personnalisée
-    contentColor = BlueBlack       // Couleur de contenu personnalisée
-)
-
-val CustomNavigationBarStyle = SystemBarStyle(
-    backgroundColor = Color.White, // Couleur de fond personnalisée
-    contentColor = BlueBlack        // Couleur de contenu personnalisée
-)
+//val CustomStatusBarStyle = SystemBarStyle(
+//    backgroundColor = Color.White, // Couleur de fond personnalisée
+//    contentColor = BlueBlack       // Couleur de contenu personnalisée
+//)
+//
+//val CustomNavigationBarStyle = SystemBarStyle(
+//    backgroundColor = Color.White, // Couleur de fond personnalisée
+//    contentColor = BlueBlack        // Couleur de contenu personnalisée
+//)
 
 private val DarkColorScheme = darkColorScheme(
     primary = LightPurple,
     secondary = LightYellow,
-    tertiary = LightGray,
-    background = BlueBlack,
-    surface = BlueBlack,
-    onPrimary = Color.White,
-    onSecondary = Color.Black,
-    onTertiary = Color.Black,
-    onBackground = Color.White,
-    onSurface = Color.White
+//    tertiary = LightGray,
+//    background = BlueBlack,
+//    surface = BlueBlack,
+//    onPrimary = Color.White,
+//    onSecondary = Color.Black,
+//    onTertiary = Color.Black,
+//    onBackground = Color.White,
+//    onSurface = Color.White
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = LightPurple,
     secondary = LightYellow,
-    tertiary = LightGray,
-    background = Color.White,
-    surface = LightGray,
-    onPrimary = Color.White,
-    onSecondary = Color.Black,
-    onTertiary = Color.Black,
-    onBackground = Color.Black,
-    onSurface = Color.Black
+//    tertiary = LightGray,
+//    background = Color.White,
+//    surface = LightGray,
+//    onPrimary = Color.White,
+//    onSecondary = Color.Black,
+//    onTertiary = Color.Black,
+//    onBackground = Color.Black,
+//    onSurface = Color.Black
 )
 
 @Composable

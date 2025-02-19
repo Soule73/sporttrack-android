@@ -2,16 +2,11 @@ package com.stapp.sporttrack.ui.screens.auth
 
 import android.content.Context
 import android.content.Intent
-import android.os.Bundle
 import android.util.Patterns
 import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.SystemBarStyle
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -26,7 +21,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -48,58 +42,24 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.stapp.sporttrack.R
+import com.stapp.sporttrack.ui.WelcomeActivity
 import com.stapp.sporttrack.ui.components.CustomTextField
-import com.stapp.sporttrack.ui.components.InitViewModel
 import com.stapp.sporttrack.ui.components.PasswordTextField
-import com.stapp.sporttrack.ui.screens.WelcomeActivity
+import com.stapp.sporttrack.ui.RegisterActivity
+import com.stapp.sporttrack.ui.components.AnnotatedClickableRow
 import com.stapp.sporttrack.ui.theme.BlueBlack
 import com.stapp.sporttrack.ui.theme.LightGray
-import com.stapp.sporttrack.utils.checkAuthentication
 import com.stapp.sporttrack.utils.hideKeyboard
 import com.stapp.sporttrack.utils.saveUserDataAndToken
 import com.stapp.sporttrack.viewmodel.RegistrationViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-
-class LoginActivity : ComponentActivity() {
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        val checkAuth = intent.getBooleanExtra("checkAuthentication", true)
-
-        if (checkAuth && checkAuthentication(this, true)) return
-
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.dark(
-                scrim = android.graphics.Color.parseColor("#061428"),
-//                darkScrim = android.graphics.Color.parseColor("#061428"),
-
-            ),
-            navigationBarStyle = SystemBarStyle.dark(
-                scrim = android.graphics.Color.parseColor("#061428"),
-//                darkScrim = android.graphics.Color.parseColor("#061428"),
-            )
-        )
-
-        setContent {
-            InitViewModel(context = this) { _, viewModel ->
-                LoginScreen(viewModel)
-            }
-        }
-
-    }
-
-}
 
 @Composable
 fun LoginScreen(viewModel: RegistrationViewModel) {
@@ -127,7 +87,7 @@ fun LoginScreen(viewModel: RegistrationViewModel) {
 
     LaunchedEffect(viewModel.loginResult) {
         viewModel.loginResult.collectLatest { result ->
-        isLoading = false
+            isLoading = false
             result?.onSuccess { loginResponse ->
 
                 saveUserDataAndToken(context, loginResponse)
@@ -161,10 +121,11 @@ fun LoginScreen(viewModel: RegistrationViewModel) {
     ) {
         Column(
             modifier = Modifier.padding(
-                top=localContext.screenHeightDp.dp/8,
+                top = localContext.screenHeightDp.dp / 8,
                 start = 16.dp,
                 end = 16.dp,
-                bottom = 20.dp)
+                bottom = 20.dp
+            )
         ) {
             Text(
                 text = "Connexion",
@@ -302,46 +263,15 @@ fun LoginScreen(viewModel: RegistrationViewModel) {
     }
 }
 
-
 @Composable
 fun AccountRow(context: Context) {
-    val annotatedString = buildAnnotatedString {
-        append("Vous n'avez pas de compte? ")
-
-        pushStringAnnotation(tag = "URL", annotation = "Créer un compte")
-        withStyle(style = SpanStyle(color = BlueBlack, textDecoration = TextDecoration.Underline)) {
-            append("Créer un compte")
-        }
-        pop()
-    }
-
-    Row(
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 20.dp),
-
-        ) {
-        BasicText(
-            text = annotatedString,
-            modifier = Modifier.clickable {
-                annotatedString.getStringAnnotations(
-                    tag = "URL",
-                    start = 0,
-                    end = annotatedString.length
-                )
-                    .firstOrNull()?.let { annotation ->
-                        if (annotation.item == "Créer un compte") {
-                            val intent = Intent(context, RegisterActivity::class.java).apply {
-                                putExtra("isFromLoginActivity", true)
-                            }
-                            context.startActivity(intent)
-                            (context as ComponentActivity).finish()
-                        }
-                    }
-            }
-        )
+    AnnotatedClickableRow(
+        context = context,
+        questionText = "Vous n'avez pas de compte? ",
+        actionText = "Créer un compte",
+        targetActivity = RegisterActivity::class.java
+    ) {
+        putExtra("isFromLoginActivity", true)
     }
 }
 
