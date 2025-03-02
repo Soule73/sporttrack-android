@@ -1,30 +1,18 @@
-import java.io.FileInputStream
-import java.io.FileNotFoundException
-import java.util.Properties
-
-val secretsPropertiesFile = rootProject.file("keystore.properties")
-val secretsProperties = Properties()
-if (secretsPropertiesFile.exists()) {
-    secretsProperties.load(FileInputStream(secretsPropertiesFile))
-} else {
-    throw FileNotFoundException("Le fichier secrets.properties est manquant.")
-}
-
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 
     id("org.jetbrains.kotlin.plugin.serialization") version "2.1.10" // Pour la sérialisation JSON
+    id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
 }
 
 android {
     namespace = "com.stapp.sporttrack"
     compileSdk = 35
 
-
     defaultConfig {
+
         applicationId = "com.stapp.sporttrack"
         minSdk = 26
         // minSdk = 21
@@ -33,17 +21,11 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        val apiBaseUrlDebug = secretsProperties["API_BASE_URL_DEBUG"] as String
-        buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrlDebug\"")
     }
 
     buildTypes {
 
         debug {
-
-            val apiBaseUrlDebug = secretsProperties["API_BASE_URL_DEBUG"] as String
-            buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrlDebug\"")
         }
 
         release {
@@ -52,9 +34,6 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-
-            val apiBaseUrlRelease = secretsProperties["API_BASE_URL_RELEASE"] as String
-            buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrlRelease\"")
         }
     }
     compileOptions {
@@ -69,6 +48,16 @@ android {
 
         compose = true
     }
+}
+
+secrets {
+    // Optionally specify a different file name containing your secrets.
+    // The plugin defaults to "local.properties"
+    propertiesFileName = "secrets.properties"
+
+    // A properties file containing default secret values. This file can be
+    // checked in version control.
+    defaultPropertiesFileName = "local.defaults.properties"
 }
 
 dependencies {
@@ -114,8 +103,25 @@ dependencies {
     //Health connect
     implementation(libs.androidx.connect.client)
 
-    implementation("com.github.Philjay:MPAndroidChart:v3.1.0")
+    implementation(libs.mpandroidchart)
 
+    // Dependency to include Maps SDK for Android
+//    implementation(libs.play.services.maps)
+
+    // Google Maps Compose library
+    implementation(libs.maps.compose)
+    // Google Maps Compose utility library
+    implementation(libs.maps.compose.utils)
+    // Google Maps Compose widgets library
+    implementation(libs.maps.compose.widgets)
+    implementation(libs.play.services.location)
+
+    implementation(libs.accompanist.permissions)
+    implementation(libs.androidx.runtime.livedata)
+    implementation(libs.androidx.foundation.layout.android)
+
+
+    runtimeOnly(libs.accompanist.pager)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

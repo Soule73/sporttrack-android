@@ -1,10 +1,9 @@
 package com.stapp.sporttrack.ui.screens.auth
 
 import android.content.Context
-import android.content.Intent
+import android.content.res.Configuration
 import android.util.Patterns
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.scrollBy
@@ -23,12 +22,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,27 +44,33 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.stapp.sporttrack.R
-import com.stapp.sporttrack.ui.WelcomeActivity
+import com.stapp.sporttrack.data.repository.AuthRepository
+import com.stapp.sporttrack.ui.components.AnnotatedClickableRow
 import com.stapp.sporttrack.ui.components.CustomTextField
 import com.stapp.sporttrack.ui.components.PasswordTextField
-import com.stapp.sporttrack.ui.RegisterActivity
-import com.stapp.sporttrack.ui.components.AnnotatedClickableRow
-import com.stapp.sporttrack.ui.theme.BlueBlack
-import com.stapp.sporttrack.ui.theme.LightGray
+import com.stapp.sporttrack.ui.navigation.Screen
+import com.stapp.sporttrack.ui.theme.SportTrackTheme
+import com.stapp.sporttrack.utils.AuthUtils
+import com.stapp.sporttrack.utils.SharedPreferencesConstants
 import com.stapp.sporttrack.utils.hideKeyboard
-import com.stapp.sporttrack.utils.saveUserDataAndToken
-import com.stapp.sporttrack.viewmodel.RegistrationViewModel
+import com.stapp.sporttrack.viewmodel.AuthViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @Composable
-fun LoginScreen(viewModel: RegistrationViewModel) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    val context = LocalContext.current
+fun LoginScreen(
+    context : Context,
+    navController: NavController,
+    viewModel: AuthViewModel
+) {
+    val email by viewModel.email.collectAsState()
+    val password by viewModel.password.collectAsState()
 
     var isEmailValid by remember { mutableStateOf(true) }
     var hidePassword by remember { mutableStateOf(true) }
@@ -78,6 +83,7 @@ fun LoginScreen(viewModel: RegistrationViewModel) {
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
     val keyboardHeight = WindowInsets.ime.getBottom(LocalDensity.current)
+    val localContext = LocalConfiguration.current
 
     LaunchedEffect(key1 = keyboardHeight) {
         coroutineScope.launch {
@@ -90,15 +96,12 @@ fun LoginScreen(viewModel: RegistrationViewModel) {
             isLoading = false
             result?.onSuccess { loginResponse ->
 
-                saveUserDataAndToken(context, loginResponse)
+                AuthUtils.saveUserDataAndToken(context, loginResponse)
 
                 Toast.makeText(context, "Connexion réussie", Toast.LENGTH_SHORT).show()
 
-                val intent = Intent(context, WelcomeActivity::class.java).apply {
-                    putExtra("verifyToken", false)
-                }
-                context.startActivity(intent)
-                (context as ComponentActivity).finish()
+                navController.navigate(Screen.WelcomeScreen.route)
+
             }?.onFailure { exception ->
                 errorMessage = exception.message.toString()
                 Toast.makeText(
@@ -106,12 +109,11 @@ fun LoginScreen(viewModel: RegistrationViewModel) {
                     "Erreur lors de la connexion",
                     Toast.LENGTH_SHORT
                 ).show()
-                println("Erreur lors de la connexion: ${exception.message}")
             }
         }
     }
 
-    val localContext = LocalConfiguration.current
+
     Column(
         modifier = Modifier
             .imePadding()
@@ -131,8 +133,8 @@ fun LoginScreen(viewModel: RegistrationViewModel) {
                 text = "Connexion",
                 style = TextStyle(
                     fontSize = 40.sp,
-                    color = BlueBlack,
                     fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
                 ),
                 textAlign = TextAlign.Start,
             )
@@ -141,7 +143,7 @@ fun LoginScreen(viewModel: RegistrationViewModel) {
                 text = "Renseignez vos informations pour vous connecter.",
                 style = TextStyle(
                     fontSize = MaterialTheme.typography.bodyLarge.fontSize,
-                    color = BlueBlack.copy(alpha = 0.5f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 ),
                 textAlign = TextAlign.Start,
             )
@@ -159,7 +161,7 @@ fun LoginScreen(viewModel: RegistrationViewModel) {
                         brush = Brush.verticalGradient(
                             listOf(
                                 Color.Transparent,
-                                LightGray,
+                                MaterialTheme.colorScheme.surfaceVariant,
                                 Color.Transparent
                             )
                         )
@@ -175,7 +177,7 @@ fun LoginScreen(viewModel: RegistrationViewModel) {
                 modifier = Modifier.fillMaxWidth(),
                 value = email,
                 onValueChange = {
-                    email = it
+                    viewModel.setEmail(it)
                     isEmailValid = Patterns.EMAIL_ADDRESS.matcher(it).matches()
                     errorMessage = ""
                 },
@@ -193,7 +195,7 @@ fun LoginScreen(viewModel: RegistrationViewModel) {
             PasswordTextField(
                 password = password,
                 onPasswordChange = {
-                    password = it
+                    viewModel.setPassword(it)
                     errorMessage = ""
                 },
                 onTrailingIconClick = { hidePassword = !hidePassword },
@@ -220,12 +222,6 @@ fun LoginScreen(viewModel: RegistrationViewModel) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 15.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = BlueBlack,
-                    contentColor = LightGray,
-                    disabledContentColor = BlueBlack.copy(alpha = 0.3f),
-                    disabledContainerColor = LightGray
-                )
             ) {
                 if (isLoading) {
                     Row(
@@ -236,22 +232,20 @@ fun LoginScreen(viewModel: RegistrationViewModel) {
                             .fillMaxWidth(),
                     ) {
                         CircularProgressIndicator(
-                            color = BlueBlack.copy(alpha = 0.3f),
+                            color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp),
                             strokeWidth = 2.dp
                         )
 
                         Text(
                             "Chargement...",
-                            modifier = Modifier
-                                .padding(start = 10.dp),
+                            modifier = Modifier.padding(start = 10.dp),
                         )
                     }
                 } else {
                     Text(
                         "Se connecter",
-                        modifier = Modifier
-                            .padding(vertical = 10.dp),
+                        modifier = Modifier.padding(vertical = 10.dp),
                         fontWeight = FontWeight.Bold,
                         fontSize = MaterialTheme.typography.titleMedium.fontSize
                     )
@@ -259,20 +253,49 @@ fun LoginScreen(viewModel: RegistrationViewModel) {
             }
         }
         Spacer(modifier = Modifier.height(20.dp))
-        AccountRow(context)
+        AccountRow(onClick = { navController.navigate(Screen.RegisterScreenStep1.route) })
     }
+//        }
+//    )
 }
 
 @Composable
-fun AccountRow(context: Context) {
+fun AccountRow(onClick: () -> Unit) {
     AnnotatedClickableRow(
-        context = context,
         questionText = "Vous n'avez pas de compte? ",
         actionText = "Créer un compte",
-        targetActivity = RegisterActivity::class.java
-    ) {
-        putExtra("isFromLoginActivity", true)
-    }
+        onClick = { onClick() }
+    )
 }
 
 
+@Preview(
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+    name = "DefaultPreviewDark"
+)
+@Preview(
+    uiMode = Configuration.UI_MODE_NIGHT_NO,
+    name = "DefaultPreviewLight",
+    showBackground = true
+)
+@Composable
+fun LoginScreenPreview(
+) {
+    val context = LocalContext.current
+    val viewModel = AuthViewModel(
+        context = context,
+        authRepository = AuthRepository(
+            sharedPreferences = context.getSharedPreferences(
+                SharedPreferencesConstants.PREF_NAME,
+                Context.MODE_PRIVATE
+            )
+        )
+    )
+    SportTrackTheme {
+    LoginScreen(
+        context=context,
+        navController = rememberNavController(),
+        viewModel = viewModel
+    )
+    }
+}

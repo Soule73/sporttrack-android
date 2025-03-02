@@ -2,10 +2,8 @@ package com.stapp.sporttrack.ui.screens.auth
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.Intent
 import android.content.res.Configuration
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.scrollBy
@@ -24,7 +22,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -47,33 +44,43 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.stapp.sporttrack.R
+import com.stapp.sporttrack.data.repository.AuthRepository
 import com.stapp.sporttrack.ui.components.PasswordTextField
-import com.stapp.sporttrack.ui.WelcomeActivity
-import com.stapp.sporttrack.ui.theme.BlueBlack
-import com.stapp.sporttrack.ui.theme.LightGray
+import com.stapp.sporttrack.ui.navigation.Screen
+import com.stapp.sporttrack.ui.theme.SportTrackTheme
+import com.stapp.sporttrack.utils.AuthUtils
+import com.stapp.sporttrack.utils.SharedPreferencesConstants
 import com.stapp.sporttrack.utils.hideKeyboard
-import com.stapp.sporttrack.utils.saveUserDataAndToken
-import com.stapp.sporttrack.viewmodel.RegistrationViewModel
+import com.stapp.sporttrack.viewmodel.AuthViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @SuppressLint("UnrememberedMutableInteractionSource", "UseOfNonLambdaOffsetOverload")
 @Composable
-fun RegisterStep3(navController: NavController, viewModel: RegistrationViewModel) {
-    var password by remember { mutableStateOf("") }
+fun RegisterStep3(
+    navController: NavController,
+    viewModel: AuthViewModel,
+    context: Context,
+    isAuthenticated: Boolean = false
+) {
+
+    val password by viewModel.password.collectAsState()
+
     var confirmPassword by remember { mutableStateOf("") }
     var hidePassword by remember { mutableStateOf(true) }
     var hideConfirmPassword by remember { mutableStateOf(true) }
-    val context = LocalContext.current
     val configuration = LocalConfiguration.current
 
     var isLoading by remember { mutableStateOf(false) }
 
-    val registrationError by viewModel.registrationError.collectAsState()
+    val registrationError by viewModel.registrationError.collectAsStateWithLifecycle()
 
     LaunchedEffect(registrationError) {
         if (registrationError?.containsKey("error") == true) {
@@ -85,12 +92,15 @@ fun RegisterStep3(navController: NavController, viewModel: RegistrationViewModel
         }
     }
 
-
     fun setIsLoadingFalse() {
         isLoading = false
     }
 
-    HandleRegistrationResult(viewModel, context, setIsLoadingFalse())
+    HandleRegistrationResult(viewModel, context, setIsLoadingFalse(), onSuccess = {
+        navController.navigate(
+            Screen.WelcomeScreen.route
+        )
+    })
 
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
@@ -104,7 +114,6 @@ fun RegisterStep3(navController: NavController, viewModel: RegistrationViewModel
 
     Column(
         modifier = Modifier
-
             .imePadding()
             .verticalScroll(scrollState)
             .fillMaxSize(),
@@ -117,7 +126,7 @@ fun RegisterStep3(navController: NavController, viewModel: RegistrationViewModel
             confirmPassword = confirmPassword,
             hidePassword = hidePassword,
             hideConfirmPassword = hideConfirmPassword,
-            onPasswordChange = { password = it },
+            onPasswordChange = { viewModel.setPassword(it) },
             onConfirmPasswordChange = { confirmPassword = it },
             onPasswordVisibilityChange = { hidePassword = !hidePassword },
             onConfirmPasswordVisibilityChange = { hideConfirmPassword = !hideConfirmPassword }
@@ -130,7 +139,8 @@ fun RegisterStep3(navController: NavController, viewModel: RegistrationViewModel
             onRegister = {
                 isLoading = true
                 hideKeyboard(context)
-                viewModel.password = password
+
+                viewModel.setPassword(password)
                 viewModel.register()
             }
         )
@@ -138,22 +148,27 @@ fun RegisterStep3(navController: NavController, viewModel: RegistrationViewModel
 }
 
 @Composable
-fun HandleRegistrationResult(viewModel: RegistrationViewModel, context: Context, onRegister: Unit) {
+fun HandleRegistrationResult(
+    viewModel: AuthViewModel,
+    context: Context,
+    onRegister: Unit,
+    onSuccess: () -> Unit
+) {
     LaunchedEffect(viewModel.registrationResult) {
-
         viewModel.registrationResult.collectLatest { result ->
             onRegister.run { }
             result?.onSuccess { authResponse ->
-                saveUserDataAndToken(context, authResponse)
-                context.startActivity(Intent(context, WelcomeActivity::class.java).apply {
-                    putExtra("verifyToken", false)
-                })
-                (context as ComponentActivity).finish()
-                Toast.makeText(context, "Inscription réussie", Toast.LENGTH_SHORT).show()
-            }?.onFailure { exception ->
-                Toast.makeText(context, exception.message, Toast.LENGTH_SHORT).show()
 
-                println("Erreur lors de l'inscription ::: ${exception.message}")
+                onSuccess()
+
+                AuthUtils.saveUserDataAndToken(context, authResponse)
+
+                Toast.makeText(context, "Inscription réussie", Toast.LENGTH_SHORT).show()
+
+                viewModel.resetData()
+
+            }?.onFailure {
+                Toast.makeText(context, "Erreur lors de l'inscription", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -175,7 +190,7 @@ fun HeaderSection() {
             text = "Créer un mot de passe",
             style = TextStyle(
                 fontSize = 40.sp,
-                color = BlueBlack,
+                color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold,
             ),
             textAlign = TextAlign.Start,
@@ -185,7 +200,7 @@ fun HeaderSection() {
             text = "Choisir un mot de passe fort et sécurisé.",
             style = TextStyle(
                 fontSize = MaterialTheme.typography.bodyLarge.fontSize,
-                color = BlueBlack.copy(alpha = 0.5f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             ),
             textAlign = TextAlign.Start,
         )
@@ -207,7 +222,7 @@ fun SecurityImageSection(configuration: Configuration) {
                     brush = Brush.verticalGradient(
                         listOf(
                             Color.Transparent,
-                            LightGray,
+                            MaterialTheme.colorScheme.surfaceVariant,
                             Color.Transparent
                         )
                     )
@@ -284,12 +299,6 @@ fun RegisterButton(
         modifier = Modifier
             .fillMaxWidth()
             .padding(15.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = BlueBlack,
-            contentColor = LightGray,
-            disabledContentColor = BlueBlack.copy(alpha = 0.3f),
-            disabledContainerColor = LightGray
-        )
     ) {
         if (isLoading) {
             Row(
@@ -300,7 +309,7 @@ fun RegisterButton(
                     .fillMaxWidth(),
             ) {
                 CircularProgressIndicator(
-                    color = BlueBlack.copy(alpha = 0.3f),
+                    color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp),
                     strokeWidth = 2.dp
                 )
@@ -320,6 +329,36 @@ fun RegisterButton(
                 fontSize = MaterialTheme.typography.titleMedium.fontSize
             )
         }
+    }
+}
 
+@Preview(
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+    name = "DefaultPreviewDark"
+)
+@Preview(
+    uiMode = Configuration.UI_MODE_NIGHT_NO,
+    name = "DefaultPreviewLight",
+    showBackground = true
+)
+@Composable
+fun RegisterStep3Preview() {
+    val navController = rememberNavController()
+    val context = LocalContext.current
+    val viewModel = AuthViewModel(
+        context = context,
+        authRepository = AuthRepository(
+            sharedPreferences = context.getSharedPreferences(
+                SharedPreferencesConstants.PREF_NAME,
+                Context.MODE_PRIVATE
+            )
+        )
+    )
+    SportTrackTheme {
+        RegisterStep3(
+            context = context,
+            navController = navController,
+            viewModel = viewModel
+        )
     }
 }

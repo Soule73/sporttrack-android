@@ -22,12 +22,11 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.MeasurePolicy
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
+
 
 /**
  * A custom slider composable that allows selecting a value within a given range.
@@ -44,17 +43,16 @@ import kotlin.math.roundToInt
  * @param thumb The composable used to display the thumb of the slider.
  * @param track The composable used to display the track of the slider.
  * @param indicator The composable used to display the indicators on the slider.
- * @param label The composable used to display the label above the slider.
  *
- */
+ **/
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomSlider(
     value: Float,
     onValueChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
-    valueRange: ClosedFloatingPointRange<Float> = ValueRange,
-    gap: Int = Gap,
+    valueRange: ClosedFloatingPointRange<Float> = 0f..100f,
+    gap: Int = 1,
     showIndicator: Boolean = false,
     showLabel: Boolean = false,
     suffixLabel: String = "",
@@ -128,8 +126,11 @@ private fun Label(
         modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
-        Text(text = "${value.roundToInt()}$suffixLabel",
-            fontSize = MaterialTheme.typography.bodySmall.fontSize)
+        Text(
+            text = "${value.roundToInt()}$suffixLabel",
+            fontSize = MaterialTheme.typography.bodySmall.fontSize,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
@@ -140,7 +141,6 @@ private fun Indicator(
     gap: Int,
     indicator: @Composable (indicatorValue: Int) -> Unit
 ) {
-    // Iterate over the value range and display indicators at regular intervals.
     for (i in valueRange.start.roundToInt()..valueRange.endInclusive.roundToInt() step gap) {
         Box(
             modifier = modifier
@@ -149,6 +149,121 @@ private fun Indicator(
         }
     }
 }
+
+/**
+ * Object to hold defaults used by [CustomSlider]
+ */
+object CustomSliderDefaults {
+    @Composable
+    fun Thumb(
+        thumbValue: String,
+        modifier: Modifier = Modifier,
+        color: Color = MaterialTheme.colorScheme.primary,
+        size: Dp = 30.dp,
+        shape: Shape = CircleShape,
+        content: @Composable () -> Unit = {
+            Text(
+                text = thumbValue,
+                color = MaterialTheme.colorScheme.onPrimary,
+                textAlign = TextAlign.Center
+            )
+        }
+    ) {
+        Box(
+            modifier = modifier
+                .thumb(size = size, shape = shape)
+                .background(color)
+                .padding(2.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            content()
+        }
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun Track(
+        sliderState: SliderState,
+        modifier: Modifier = Modifier,
+        trackColor: Color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+        progressColor: Color = MaterialTheme.colorScheme.primary,
+        height: Dp = 8.dp,
+        shape: Shape = CircleShape
+    ) {
+        Box(
+            modifier = modifier
+                .track(height = height, shape = shape)
+                .background(trackColor)
+        ) {
+            Box(
+                modifier = Modifier
+                    .progress(
+                        sliderState = sliderState,
+                        height = height,
+                        shape = shape
+                    )
+                    .background(progressColor)
+            )
+        }
+    }
+
+    @Composable
+    fun Indicator(
+        indicatorValue: String,
+        modifier: Modifier = Modifier,
+        style: TextStyle = MaterialTheme.typography.bodySmall
+    ) {
+        Box(modifier = modifier) {
+            Text(
+                text = indicatorValue,
+                style = style,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
+
+    @Composable
+    fun Label(
+        labelValue: String,
+        modifier: Modifier = Modifier,
+        style: TextStyle = MaterialTheme.typography.bodySmall
+    ) {
+        Box(modifier = modifier) {
+            Text(
+                text = labelValue,
+                style = style,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
+}
+
+fun Modifier.track(
+    height: Dp = 8.dp,
+    shape: Shape = CircleShape
+) = this
+    .fillMaxWidth()
+    .heightIn(min = height)
+    .clip(shape)
+
+@OptIn(ExperimentalMaterial3Api::class)
+fun Modifier.progress(
+    sliderState: SliderState,
+    height: Dp = 8.dp,
+    shape: Shape = CircleShape
+) = this
+    .fillMaxWidth(fraction = (sliderState.value - sliderState.valueRange.start) / (sliderState.valueRange.endInclusive - sliderState.valueRange.start))
+    .heightIn(min = height)
+    .clip(shape)
+
+fun Modifier.thumb(
+    size: Dp = 30.dp,
+    shape: Shape = CircleShape
+) = this
+    .defaultMinSize(minWidth = size, minHeight = size)
+    .clip(shape)
 
 private fun customSliderMeasurePolicy(
     itemCount: Int,
@@ -223,165 +338,6 @@ private fun customSliderMeasurePolicy(
     }
 }
 
-/**
- * Object to hold defaults used by [CustomSlider]
- */
-object CustomSliderDefaults {
-
-    /**
-     * Composable function that represents the thumb of the slider.
-     *
-     * @param thumbValue The value to display on the thumb.
-     * @param modifier The modifier for styling the thumb.
-     * @param color The color of the thumb.
-     * @param size The size of the thumb.
-     * @param shape The shape of the thumb.
-     */
-    @Composable
-    fun Thumb(
-        thumbValue: String,
-        modifier: Modifier = Modifier,
-        color: Color = PrimaryColor,
-        size: Dp = ThumbSize,
-        shape: Shape = CircleShape,
-        content: @Composable () -> Unit = {
-            Text(
-                text = thumbValue,
-                color = Color.White,
-                textAlign = TextAlign.Center
-            )
-        }
-    ) {
-        Box(
-            modifier = modifier
-                .thumb(size = size, shape = shape)
-                .background(color)
-                .padding(2.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            content()
-        }
-    }
-
-    /**
-     * Composable function that represents the track of the slider.
-     *
-     * @param sliderState The state of the slider.
-     * @param modifier The modifier for styling the track.
-     * @param trackColor The color of the track.
-     * @param progressColor The color of the progress.
-     * @param height The height of the track.
-     * @param shape The shape of the track.
-     */
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    fun Track(
-        sliderState: SliderState,
-        modifier: Modifier = Modifier,
-        trackColor: Color = TrackColor,
-        progressColor: Color = PrimaryColor,
-        height: Dp = TrackHeight,
-        shape: Shape = CircleShape
-    ) {
-        Box(
-            modifier = modifier
-                .track(height = height, shape = shape)
-                .background(trackColor)
-        ) {
-            Box(
-                modifier = Modifier
-                    .progress(
-                        sliderState = sliderState,
-                        height = height,
-                        shape = shape
-                    )
-                    .background(progressColor)
-            )
-        }
-    }
-
-    /**
-     * Composable function that represents the indicator of the slider.
-     *
-     * @param indicatorValue The value to display as the indicator.
-     * @param modifier The modifier for styling the indicator.
-     * @param style The style of the indicator text.
-     */
-    @Composable
-    fun Indicator(
-        indicatorValue: String,
-        modifier: Modifier = Modifier,
-        style: TextStyle = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Normal)
-    ) {
-        Box(modifier = modifier) {
-            Text(
-                text = indicatorValue,
-                style = style,
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-
-    /**
-     * Composable function that represents the label of the slider.
-     *
-     * @param labelValue The value to display as the label.
-     * @param modifier The modifier for styling the label.
-     * @param style The style of the label text.
-     */
-    @Composable
-    fun Label(
-        labelValue: String,
-        modifier: Modifier = Modifier,
-        style: TextStyle = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Normal)
-    ) {
-        Box(modifier = modifier) {
-            Text(
-                text = labelValue,
-                style = style,
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-}
-
-fun Modifier.track(
-    height: Dp = TrackHeight,
-    shape: Shape = CircleShape
-) = this
-    .fillMaxWidth()
-    .heightIn(min = height)
-    .clip(shape)
-
-@OptIn(ExperimentalMaterial3Api::class)
-fun Modifier.progress(
-    sliderState: SliderState,
-    height: Dp = TrackHeight,
-    shape: Shape = CircleShape
-) = this
-    // Compute the fraction based on the slider's current value.
-    // We do this by dividing the current value by the total value.
-    // However, the start value might not always be 0, so we need to
-    // subtract the start value from both the current value and the total value.
-    .fillMaxWidth(fraction = (sliderState.value - sliderState.valueRange.start) / (sliderState.valueRange.endInclusive - sliderState.valueRange.start))
-    .heightIn(min = height)
-    .clip(shape)
-
-fun Modifier.thumb(
-    size: Dp = ThumbSize,
-    shape: Shape = CircleShape
-) = this
-    .defaultMinSize(minWidth = size, minHeight = size)
-    .clip(shape)
-
 private enum class CustomSliderComponents {
     SLIDER, LABEL, INDICATOR, THUMB
 }
-
-val PrimaryColor = Color(0xFF6650a4)
-val TrackColor = Color(0xFFE7E0EC)
-
-private const val Gap = 1
-private val ValueRange = 0f..10f
-private val TrackHeight = 8.dp
-private val ThumbSize = 30.dp

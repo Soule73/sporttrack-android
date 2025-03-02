@@ -3,13 +3,14 @@ package com.stapp.sporttrack.data.repository
 import android.content.SharedPreferences
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.stapp.sporttrack.BuildConfig
-import com.stapp.sporttrack.data.AuthInterceptor
-import com.stapp.sporttrack.data.interfaces.AuthService
+import com.stapp.sporttrack.data.services.AuthInterceptor
+import com.stapp.sporttrack.data.services.AuthService
 import com.stapp.sporttrack.data.models.AuthResponse
 import com.stapp.sporttrack.data.models.ErrorResponse
 import com.stapp.sporttrack.data.models.LoginRequest
 import com.stapp.sporttrack.data.models.UserRequest
 import com.stapp.sporttrack.data.models.UserResponse
+import com.stapp.sporttrack.data.models.UserUpdateRequest
 import com.stapp.sporttrack.utils.SharedPreferencesConstants
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
@@ -71,6 +72,35 @@ class AuthRepository(private val sharedPreferences: SharedPreferences) {
         }
     }
 
+    suspend fun update(userUpdateRequest: UserUpdateRequest): Result<UserResponse> {
+        return try {
+            val response = authService.update(userUpdateRequest)
+            if (response.isSuccessful) {
+                val body = response.body()
+                if (body != null) {
+                    Result.success(body)
+                } else {
+
+                    Result.failure(Exception("Réponse du serveur vide"))
+                }
+            } else {
+                val errorBody = response.errorBody()?.string()
+                if (errorBody != null) {
+                    val errorResponse = Json.decodeFromString<ErrorResponse>(errorBody)
+                    Result.failure(CustomException(errorResponse))
+                } else {
+
+                    Result.failure(CustomException(ErrorResponse(mapOf("error" to "Erreur inconnue lors de l'inscription"))))
+                }
+            }
+        } catch (e: Exception) {
+
+            val errorResponse =
+                ErrorResponse(errors = mapOf("error" to (e.message ?: "Erreur inconnue")))
+            Result.failure(CustomException(errorResponse))
+        }
+    }
+
     suspend fun login(loginRequest: LoginRequest): Result<AuthResponse> {
         return try {
             val response = authService.login(loginRequest)
@@ -124,5 +154,4 @@ class AuthRepository(private val sharedPreferences: SharedPreferences) {
     }
 }
 
-// CustomException pour encapsuler ErrorResponse
 class CustomException(val errorResponse: ErrorResponse) : Exception()

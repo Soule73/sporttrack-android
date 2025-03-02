@@ -1,6 +1,7 @@
 package com.stapp.sporttrack.ui.screens.auth
 
 import android.annotation.SuppressLint
+import android.content.res.Configuration
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -27,19 +29,21 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.stapp.sporttrack.R
-import com.stapp.sporttrack.ui.theme.BlueBlack
-import com.stapp.sporttrack.ui.theme.LightGray
+import com.stapp.sporttrack.ui.navigation.Screen
+import com.stapp.sporttrack.ui.theme.SportTrackTheme
 
 @SuppressLint("UnrememberedMutableInteractionSource", "UseOfNonLambdaOffsetOverload")
 @Composable
 fun RegisterStep0(navController: NavController) {
-    Column {
-        val configuration = LocalConfiguration.current
+    val configuration = LocalConfiguration.current
 
+    Column {
         Column(
             modifier = Modifier
                 .height(configuration.screenHeightDp.dp / 2)
@@ -54,8 +58,8 @@ fun RegisterStep0(navController: NavController) {
                             listOf(
                                 Color.Transparent,
                                 Color.Transparent,
-                                LightGray,
-                                LightGray,
+                                MaterialTheme.colorScheme.surfaceVariant,
+                                MaterialTheme.colorScheme.surfaceVariant,
                                 Color.Transparent
                             )
                         )
@@ -74,7 +78,7 @@ fun RegisterStep0(navController: NavController) {
                 text = "Bienvenue sur votre outil de suivi de données sportives.",
                 style = TextStyle(
                     fontSize = 40.sp,
-                    color = BlueBlack,
+                    color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
                 ),
                 textAlign = TextAlign.Start,
@@ -84,11 +88,11 @@ fun RegisterStep0(navController: NavController) {
                 horizontalAlignment = Alignment.End
             ) {
                 IconButton(
-                    onClick = { navController.navigate("step1") },
+                    onClick = { navController.navigate(Screen.RegisterScreenStep1.route) },
                     modifier = Modifier
                         .width(70.dp)
                         .height(70.dp)
-                        .background(BlueBlack, CircleShape)
+                        .background(MaterialTheme.colorScheme.primary, CircleShape)
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowForward,
@@ -96,10 +100,28 @@ fun RegisterStep0(navController: NavController) {
                         modifier = Modifier
                             .size(50.dp)
                             .padding(10.dp),
-                        tint = Color.White
+                        tint = MaterialTheme.colorScheme.onPrimary
                     )
                 }
             }
         }
     }
 }
+
+
+@Preview(
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+    name = "DefaultPreviewDark"
+)
+@Preview(
+    uiMode = Configuration.UI_MODE_NIGHT_NO,
+    name = "DefaultPreviewLight",
+    showBackground = true
+)
+@Composable
+fun RegisterStep0Preview() {
+    SportTrackTheme {
+    RegisterStep0(navController = rememberNavController())
+    }
+}
+

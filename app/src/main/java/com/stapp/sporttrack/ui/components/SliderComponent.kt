@@ -20,8 +20,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.stapp.sporttrack.ui.theme.BlueBlack
-import com.stapp.sporttrack.ui.theme.LightGray
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,11 +33,11 @@ fun SliderComponent(
     maxLabel: Float,
     minIcon: Int,
     maxIcon: Int,
-    maxImageWidth: Dp=40.dp,
-    minImageWidth: Dp=40.dp
+    maxImageWidth: Dp = 40.dp,
+    minImageWidth: Dp = 40.dp
 ) {
     Column {
-        Text(label, style = MaterialTheme.typography.titleMedium)
+        Text(label, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.Bottom,
@@ -48,12 +46,18 @@ fun SliderComponent(
             Image(
                 painter = painterResource(id = minIcon),
                 contentDescription = "Min",
-                modifier = Modifier.width(minImageWidth)
+                modifier = Modifier.width(minImageWidth),
+                colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(
+                    color = MaterialTheme.colorScheme.onBackground
+                )
             )
             Image(
                 painter = painterResource(id = maxIcon),
                 contentDescription = "Max",
-                modifier = Modifier.width(maxImageWidth)
+                modifier = Modifier.width(maxImageWidth),
+                colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(
+                    color = MaterialTheme.colorScheme.onBackground
+                )
             )
         }
         CustomSlider(
@@ -70,12 +74,12 @@ fun SliderComponent(
                     size = 30.dp,
                     modifier = Modifier
                         .background(
-                            LightGray,
+                            MaterialTheme.colorScheme.surfaceVariant,
                             shape = CircleShape
                         )
                         .border(
                             width = 4.dp,
-                            color = BlueBlack,
+                            color = MaterialTheme.colorScheme.primary,
                             shape = CircleShape
                         )
                 )
@@ -84,14 +88,14 @@ fun SliderComponent(
                 Box(
                     modifier = Modifier
                         .track()
-                        .background(BlueBlack.copy(alpha = 0.2f)),
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
                     contentAlignment = Alignment.CenterStart
                 ) {
                     Box(
                         modifier = Modifier
                             .progress(sliderState = sliderState)
                             .background(
-                                BlueBlack.copy(alpha = 0.2f)
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
                             )
                     )
                 }
@@ -103,12 +107,12 @@ fun SliderComponent(
         ) {
             Text(
                 text = "${minLabel.toInt()} $suffixLabel",
-                color = BlueBlack,
+                color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.bodyMedium
             )
             Text(
                 text = "${maxLabel.toInt()} $suffixLabel",
-                color = BlueBlack,
+                color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.bodyMedium
             )
         }
