@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -41,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.records.ExerciseSessionRecord
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.stapp.sporttrack.R
 import com.stapp.sporttrack.ui.navigation.Screen
 import com.stapp.sporttrack.ui.theme.SportTrackTheme
 import com.stapp.sporttrack.utils.ExerciseUtils
@@ -178,10 +180,10 @@ fun ExerciseListScreen(
                     )
                 },
                 endIcon = {
-                    Icon(Icons.Default.Star,
+                    Icon(
+                        painter = painterResource(R.drawable.baseline_star_outline_24),
                         contentDescription = "Non Favorite",
-                        tint =
-                        Color.Gray,
+                        tint =MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier
                             .size(35.dp)
                             .clickable {

@@ -68,7 +68,7 @@ fun WeeklyTrainingCalendar(
         LazyRow(
             modifier = Modifier.fillMaxWidth(),
             contentPadding = PaddingValues(vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(2.dp)
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             items(daysOfWeek) { day ->
                 DayItem(
@@ -96,10 +96,10 @@ fun DayItem(day: Day, isSelected: Boolean, onClick: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier
-            .width(configuration.screenWidthDp.dp / 8)
+            .width((configuration.screenWidthDp.dp / 8).coerceAtLeast(0.dp))
             .clickable(onClick = onClick)
             .background(backgroundColor, shape = RoundedCornerShape(8.dp))
-            .padding(vertical = 5.dp).height(80.dp)
+            .padding(vertical = 5.dp).height((80.dp).coerceAtLeast(0.dp))
     ) {
         Text(
             text = dayOfWeek.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() },

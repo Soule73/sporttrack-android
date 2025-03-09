@@ -87,7 +87,7 @@ enum class Screen(
         "profile_screen",
         R.string.profile_screen,
         icon = Icons.Default.Person,
-        hasAppBar = false
+       hasBackBtn = false
     ),
     ExerciseList(
         "exercise_list",

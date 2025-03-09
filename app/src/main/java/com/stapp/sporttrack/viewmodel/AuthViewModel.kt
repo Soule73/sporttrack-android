@@ -1,25 +1,25 @@
 package com.stapp.sporttrack.viewmodel
 
-import android.annotation.SuppressLint
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.stapp.sporttrack.data.models.AuthResponse
+import com.stapp.sporttrack.data.models.ChangePasswordRequest
 import com.stapp.sporttrack.data.models.LoginRequest
+import com.stapp.sporttrack.data.models.SharedExerciseState
 import com.stapp.sporttrack.data.models.UserRequest
 import com.stapp.sporttrack.data.models.UserResponse
 import com.stapp.sporttrack.data.models.UserUpdateRequest
 import com.stapp.sporttrack.data.repository.AuthRepository
 import com.stapp.sporttrack.data.repository.CustomException
-import com.stapp.sporttrack.utils.convertDateToMillis
 import com.stapp.sporttrack.utils.AuthUtils
+import com.stapp.sporttrack.utils.convertDateToMillis
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 
-@SuppressLint("StaticFieldLeak")
 class AuthViewModel(context: Context, private val authRepository: AuthRepository) : ViewModel() {
 
     private val _lastName = MutableStateFlow("")
@@ -73,9 +73,21 @@ class AuthViewModel(context: Context, private val authRepository: AuthRepository
     private val _userData = MutableStateFlow<UserResponse?>(null)
     var userData: StateFlow<UserResponse?> = _userData
 
+    private val _deleteAccountResult = MutableStateFlow<Result<Unit>?>(null)
+    val deleteAccountResult: StateFlow<Result<Unit>?> = _deleteAccountResult
+
+    private val _changePasswordResult = MutableStateFlow<Result<Unit>?>(null)
+    val changePasswordResult: StateFlow<Result<Unit>?> = _changePasswordResult
+
     init {
-        AuthUtils.getUserData(context)?.let { data ->
+        _isAuthenticated.value = AuthUtils.checkAuthentication(context)
+        _isFirstOpen.value = AuthUtils.checkIfIsFirstOpen(context)
+        val data = AuthUtils.getUserData(context)
+        if (data != null) {
             setUserData(data)
+            SharedExerciseState.userId=data.userId
+            SharedExerciseState.userWeight=data.weight
+
         }
     }
 
@@ -121,7 +133,6 @@ class AuthViewModel(context: Context, private val authRepository: AuthRepository
 
     fun resetData() {
 
-
         setEmail("")
         setFirstName("")
         setLastName("")
@@ -135,8 +146,6 @@ class AuthViewModel(context: Context, private val authRepository: AuthRepository
         _updateResult.value = null
         _loginResult.value = null
 
-        _isAuthenticated.value=false
-        _userData.value=null
     }
 
     fun beginUpdate() {
@@ -154,21 +163,19 @@ class AuthViewModel(context: Context, private val authRepository: AuthRepository
         }
     }
 
-    private fun buildUserRequest(): UserRequest {
-        return UserRequest(
-            email = email.value,
-            password = password.value,
-            firstName = firstName.value,
-            lastName = lastName.value,
-            birthDate = null,
-            gender = gender.value,
-            weight = weight.value.takeIf { it > 0f }?.toDouble(),
-            height = height.value.takeIf { it > 0f }?.toDouble(),
-        )
-    }
     fun register() {
         viewModelScope.launch {
-            val userRequest = buildUserRequest()
+            val userRequest = UserRequest(
+                email = email.value,
+                password = password.value,
+                firstName = firstName.value,
+                lastName = lastName.value,
+                birthDate = null, // Optional
+                gender = gender.value,
+                weight = if (weight.value.toDouble() > 0) weight.value.toDouble() else null,
+                height = if (height.value.toDouble() > 0) height.value.toDouble() else null,
+            )
+
             val result = authRepository.register(userRequest)
 
             if (result.isSuccess) {
@@ -187,21 +194,19 @@ class AuthViewModel(context: Context, private val authRepository: AuthRepository
         }
 
     }
-    private fun buildUserUpdateRequest(): UserUpdateRequest {
-        return UserUpdateRequest(
-            email = email.value,
-            firstName = firstName.value,
-            lastName = lastName.value,
-            birthDate = dateOfBirth.value,
-            gender = gender.value,
-            weight = weight.value.takeIf { it > 0f }?.toDouble(),
-            height = height.value.takeIf { it > 0f }?.toDouble(),
-        )
-    }
 
-       fun update() {
+    fun update() {
         viewModelScope.launch {
-            val userUpdateRequest = buildUserUpdateRequest()
+            val userUpdateRequest = UserUpdateRequest(
+                email = email.value,
+                firstName = firstName.value,
+                lastName = lastName.value,
+                birthDate = dateOfBirth.value,
+                gender = gender.value,
+                weight = if (weight.value.toDouble() > 0) weight.value.toDouble() else null,
+                height = if (height.value.toDouble() > 0) height.value.toDouble() else null,
+            )
+
             val result = authRepository.update(userUpdateRequest)
             if (result.isSuccess) {
                 _userData.update {
@@ -233,10 +238,36 @@ class AuthViewModel(context: Context, private val authRepository: AuthRepository
         }
     }
 
+    fun updatePassword(currentPassword: String, newPassword: String) {
+        viewModelScope.launch {
+            println("currentPassword: $currentPassword")
+            println("newPassword: $newPassword")
+            val request =
+                ChangePasswordRequest(currentPassword = currentPassword, newPassword = newPassword)
+
+            println("request: $request")
+            _changePasswordResult.value = authRepository.changePassword(request)
+        }
+    }
+
+    fun resetChangePasswordResult() {
+        _changePasswordResult.value = null
+    }
+
+    fun deleteAccount(password: String) {
+        viewModelScope.launch {
+            _deleteAccountResult.value = authRepository.deleteAccount(password)
+        }
+    }
+
+    fun resetDeleteAccountResult() {
+        _deleteAccountResult.value = null
+    }
 
     fun logout() {
+        _isAuthenticated.value = false
+        _userData.value = null
         resetData()
-
         authRepository.logout()
     }
 
@@ -251,16 +282,8 @@ class AuthViewModel(context: Context, private val authRepository: AuthRepository
         return exception.errorResponse.errors
     }
 
-
     fun clearRegistrationError() {
         _registrationError.value = null
     }
-    fun setIsAuthenticated(context: Context) {
-        _isAuthenticated.value=AuthUtils.checkAuthentication(context)
-    }
 
-    fun setIsFirstOpen(context: Context) {
-        _isFirstOpen.value=AuthUtils.checkIfIsFirstOpen(context)
-    }
 }
-

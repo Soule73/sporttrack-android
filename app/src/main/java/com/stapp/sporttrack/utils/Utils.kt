@@ -7,9 +7,11 @@ import android.content.Context
 import android.location.Location
 import android.view.inputmethod.InputMethodManager
 import com.google.android.gms.maps.model.LatLng
+import com.stapp.sporttrack.data.models.ExerciseStatsUnit
 import java.text.SimpleDateFormat
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
@@ -51,6 +53,7 @@ object SharedPreferencesConstants {
     const val AUTO_PAUSE_ENABLED = "AUTO_PAUSE_ENABLED"
 
 }
+
 
 fun LatLng.distanceTo(destination: LatLng?): Double {
     if (destination != null) {
@@ -108,4 +111,46 @@ fun convertMillisToDateFr(millis: Long): String {
 fun convertDateToMillis(dateString: String): Long {
     val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     return formatter.parse(dateString)?.time ?: throw IllegalArgumentException("Invalid date format")
+}
+
+fun toSeconds(formattedTime: String): Int {
+    val parts = formattedTime.split(":")
+    val minutes = parts[0].toInt()
+    val seconds = parts[1].toInt()
+    return minutes * 60 + seconds
+}
+
+fun toFormattedTime(seconds: Int): String {
+    val formattedMinutes = seconds / 60
+    val formattedSeconds = seconds % 60
+
+    var minAndSeconds=""
+
+    if(formattedMinutes > 0){
+        minAndSeconds = "$formattedMinutes "+ ExerciseStatsUnit.MIN
+    }
+    if(formattedSeconds > 0){
+        minAndSeconds += " $formattedSeconds "+ ExerciseStatsUnit.SEC
+    }
+
+    return minAndSeconds
+}
+
+fun formatDateTimeRange(start: LocalDateTime?, end: LocalDateTime?): String {
+    if (start == null || end == null) return ""
+
+    val dayFormatter = DateTimeFormatter.ofPattern("EEE dd MMM yyyy", Locale.FRENCH)
+    val timeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.FRENCH)
+
+    return if (start.toLocalDate() == end.toLocalDate()) {
+
+        "${start.format(dayFormatter)} ${start.format(timeFormatter)} - ${end.format(timeFormatter)}"
+    } else {
+
+        "${start.format(dayFormatter)} ${start.format(timeFormatter)} à ${end.format(dayFormatter)} ${
+            end.format(
+                timeFormatter
+            )
+        }"
+    }
 }

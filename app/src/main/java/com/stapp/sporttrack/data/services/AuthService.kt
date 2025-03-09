@@ -1,6 +1,8 @@
 package com.stapp.sporttrack.data.services
 
 import com.stapp.sporttrack.data.models.AuthResponse
+import com.stapp.sporttrack.data.models.ChangePasswordRequest
+import com.stapp.sporttrack.data.models.DeleteAccountRequest
 import com.stapp.sporttrack.data.models.LoginRequest
 import com.stapp.sporttrack.data.models.UserRequest
 import com.stapp.sporttrack.data.models.UserResponse
@@ -24,4 +26,11 @@ interface AuthService {
 
     @PUT("auth/users/me")
     suspend fun update(@Body userUpdateRequest: UserUpdateRequest): Response<UserResponse>
+
+    @POST("auth/change-password")
+    suspend fun changePassword(@Body changePasswordRequest: ChangePasswordRequest): Response<Unit>
+
+    @POST("auth/delete-account")
+    suspend fun deleteAccount(@Body request: DeleteAccountRequest): Response<Unit>
+
 }

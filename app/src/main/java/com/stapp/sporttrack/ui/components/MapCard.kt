@@ -9,6 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.CameraPositionState
@@ -24,30 +25,30 @@ fun MapCard(
     cameraPositionState: CameraPositionState,
     mapProperties: MapProperties,
     onMapLoaded: (() -> Unit)?,
-    currentPostion: LatLng?,
-    path: List<LatLng>,
+    userLocation: LatLng?,
+    path: List<LatLng>?,
     configuration: Configuration
 ) {
     if (displayMap) {
         Box(
-            modifier = Modifier.padding(10.dp)
+            modifier = Modifier.padding(bottom = 10.dp)
         ) {
             GoogleMap(
                 cameraPositionState = cameraPositionState,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height((configuration.screenHeightDp.dp / 2))
-                    .clip(MaterialTheme.shapes.extraLarge),
+                    .height((configuration.screenHeightDp.dp / 2).coerceAtLeast(0.dp))
+                    .clip(MaterialTheme.shapes.large),
                 onMapLoaded = onMapLoaded,
                 properties = mapProperties,
             ) {
-                if (currentPostion != null) {
+                if (userLocation != null) {
                     Marker(
-                        state = MarkerState(position = currentPostion),
+                        state = MarkerState(position = userLocation),
                         title = "Votre position"
                     )
 
-                    if (path.isNotEmpty()) {
+                    if (path!=null && path.isEmpty()) {
                         Polyline(
                             points = path,
                             color = MaterialTheme.colorScheme.primary,

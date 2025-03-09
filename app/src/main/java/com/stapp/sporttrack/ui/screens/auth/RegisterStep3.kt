@@ -1,6 +1,5 @@
 package com.stapp.sporttrack.ui.screens.auth
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Configuration
 import android.widget.Toast
@@ -20,9 +19,14 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -62,7 +66,6 @@ import com.stapp.sporttrack.viewmodel.AuthViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
-@SuppressLint("UnrememberedMutableInteractionSource", "UseOfNonLambdaOffsetOverload")
 @Composable
 fun RegisterStep3(
     navController: NavController,
@@ -70,11 +73,12 @@ fun RegisterStep3(
     context: Context,
     isAuthenticated: Boolean = false
 ) {
-
     val password by viewModel.password.collectAsState()
 
+    var currentPassword by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var hidePassword by remember { mutableStateOf(true) }
+    var hideCurrentPassword by remember { mutableStateOf(true) }
     var hideConfirmPassword by remember { mutableStateOf(true) }
     val configuration = LocalConfiguration.current
 
@@ -82,25 +86,43 @@ fun RegisterStep3(
 
     val registrationError by viewModel.registrationError.collectAsStateWithLifecycle()
 
+    fun setIsLoadingFalse() {
+        isLoading = false
+    }
     LaunchedEffect(registrationError) {
         if (registrationError?.containsKey("error") == true) {
             Toast.makeText(context, registrationError!!["error"], Toast.LENGTH_SHORT).show()
             viewModel.clearRegistrationError()
+            setIsLoadingFalse()
         } else if (registrationError?.containsKey("email") == true) {
             Toast.makeText(context, registrationError!!["email"], Toast.LENGTH_SHORT).show()
             navController.navigate("step1")
         }
     }
 
-    fun setIsLoadingFalse() {
-        isLoading = false
-    }
 
     HandleRegistrationResult(viewModel, context, setIsLoadingFalse(), onSuccess = {
         navController.navigate(
             Screen.WelcomeScreen.route
         )
     })
+
+    val changePasswordResult by viewModel.changePasswordResult.collectAsStateWithLifecycle()
+
+    LaunchedEffect(changePasswordResult) {
+        changePasswordResult?.let { result ->
+            result.onSuccess {
+                Toast.makeText(context, "Mot de passe modifié avec succès !", Toast.LENGTH_SHORT).show()
+                navController.navigate(Screen.ProfileScreen.route)
+                setIsLoadingFalse()
+            }.onFailure {exception->
+                print("erreur lors de la modification du mot de passe : ${exception.message}")
+                Toast.makeText(context, "Erreur lors de la modification du mot de passe", Toast.LENGTH_SHORT).show()
+                setIsLoadingFalse()
+            }
+            viewModel.resetChangePasswordResult()
+        }
+    }
 
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
@@ -119,34 +141,323 @@ fun RegisterStep3(
             .fillMaxSize(),
         verticalArrangement = Arrangement.Center
     ) {
-        HeaderSection()
-        SecurityImageSection(configuration)
-        PasswordFieldsSection(
-            password = password,
-            confirmPassword = confirmPassword,
-            hidePassword = hidePassword,
-            hideConfirmPassword = hideConfirmPassword,
-            onPasswordChange = { viewModel.setPassword(it) },
-            onConfirmPasswordChange = { confirmPassword = it },
-            onPasswordVisibilityChange = { hidePassword = !hidePassword },
-            onConfirmPasswordVisibilityChange = { hideConfirmPassword = !hideConfirmPassword }
-        )
-        RegisterButton(
-            password = password,
-            confirmPassword = confirmPassword,
-            context = context,
-            isLoading = isLoading,
-            onRegister = {
-                isLoading = true
-                hideKeyboard(context)
+        if(isAuthenticated){
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth().padding(bottom = 20.dp)
 
-                viewModel.setPassword(password)
-                viewModel.register()
+            ) {
+                IconButton(
+                    onClick = { navController.popBackStack() },
+                    modifier = Modifier
+                        .padding(top = 50.dp, start = 16.dp)
+                        .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f), CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBackIosNew,
+                        contentDescription = "Back",
+                        modifier = Modifier.size(30.dp)
+                    )
+                }
             }
+        }
+        HeaderSection(isAuthenticated)
+        if(!isAuthenticated) {
+        SecurityImageSection(configuration)
+        }
+        if (isAuthenticated) {
+            PasswordFieldsSection(
+                password = password,
+                isAuthenticated=true,
+                confirmPassword = confirmPassword,
+                hidePassword = hidePassword,
+                hideConfirmPassword = hideConfirmPassword,
+                currentPassword = currentPassword,
+                hideCurrentPassword = hideCurrentPassword,
+                onPasswordChange = { viewModel.setPassword(it) },
+                onConfirmPasswordChange = { confirmPassword = it },
+                onCurrentPasswordChange = { currentPassword = it },
+                onPasswordVisibilityChange = { hidePassword = !hidePassword },
+                onConfirmPasswordVisibilityChange = { hideConfirmPassword = !hideConfirmPassword },
+                onCurrentPasswordVisibilityChange = { hideCurrentPassword = !hideCurrentPassword }
+            )
+            UpdatePasswordButton(
+                currentPassword = currentPassword,
+                password = password,
+                confirmPassword = confirmPassword,
+                context = context,
+                isLoading = isLoading,
+                onUpdatePassword = {
+                    isLoading = true
+                    hideKeyboard(context)
+
+                    viewModel.updatePassword(currentPassword, password)
+                }
+            )
+        } else {
+            PasswordFieldsSection(
+                password = password,
+                isAuthenticated=false,
+                confirmPassword = confirmPassword,
+                hidePassword = hidePassword,
+                hideConfirmPassword = hideConfirmPassword,
+                onPasswordChange = { viewModel.setPassword(it) },
+                onConfirmPasswordChange = { confirmPassword = it },
+                onPasswordVisibilityChange = { hidePassword = !hidePassword },
+                onConfirmPasswordVisibilityChange = { hideConfirmPassword = !hideConfirmPassword }
+            )
+            RegisterButton(
+                password = password,
+                confirmPassword = confirmPassword,
+                context = context,
+                isLoading = isLoading,
+                onRegister = {
+                    isLoading = true
+                    hideKeyboard(context)
+
+                    viewModel.setPassword(password)
+                    viewModel.register()
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun HeaderSection(isAuthenticated: Boolean) {
+    val localContext = LocalConfiguration.current
+
+    Column(
+        modifier = Modifier.padding(
+            top = localContext.screenHeightDp.dp / 8,
+            start = 16.dp,
+            end = 16.dp,
+            bottom = 20.dp
+        )
+    ) {
+        Text(
+            text = if (isAuthenticated) "Modifier le mot de passe" else "Créer un mot de passe",
+            style = TextStyle(
+                fontSize = 40.sp,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
+            ),
+            textAlign = TextAlign.Start,
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        Text(
+            text = if (isAuthenticated) "Entrez votre mot de passe actuel et choisissez un nouveau mot de passe." else "Choisir un mot de passe fort et sécurisé.",
+            style = TextStyle(
+                fontSize = MaterialTheme.typography.bodyLarge.fontSize,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
+            textAlign = TextAlign.Start,
         )
     }
 }
 
+@Composable
+fun PasswordFieldsSection(
+    password: String,
+    confirmPassword: String,
+    hidePassword: Boolean,
+    hideConfirmPassword: Boolean,
+    onPasswordChange: (String) -> Unit,
+    onConfirmPasswordChange: (String) -> Unit,
+    onPasswordVisibilityChange: () -> Unit,
+    onConfirmPasswordVisibilityChange: () -> Unit,
+    currentPassword: String = "",
+    hideCurrentPassword: Boolean = true,
+    onCurrentPasswordChange: (String) -> Unit = {},
+    onCurrentPasswordVisibilityChange: () -> Unit = {},
+    isAuthenticated: Boolean
+) {
+    Column(modifier = Modifier.padding(20.dp)) {
+        if (isAuthenticated) {
+            PasswordTextField(
+                password = currentPassword,
+                onPasswordChange = onCurrentPasswordChange,
+                onTrailingIconClick = onCurrentPasswordVisibilityChange,
+                hidePassword = hideCurrentPassword,
+                label = "Mot de passe actuel"
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+        PasswordTextField(
+            password = password,
+            onPasswordChange = onPasswordChange,
+            onTrailingIconClick = onPasswordVisibilityChange,
+            hidePassword = hidePassword,
+            label = "Nouveau mot de passe"
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        PasswordTextField(
+            password = confirmPassword,
+            onPasswordChange = onConfirmPasswordChange,
+            onTrailingIconClick = onConfirmPasswordVisibilityChange,
+            hidePassword = hideConfirmPassword,
+            label = "Confirmer mot de passe"
+        )
+    }
+}
+
+@Composable
+fun UpdatePasswordButton(
+    currentPassword: String,
+    password: String,
+    confirmPassword: String,
+    context: Context,
+    onUpdatePassword: () -> Unit,
+    isLoading: Boolean = false
+) {
+    val enable = currentPassword.isNotBlank() && password.isNotBlank() && confirmPassword.isNotBlank() && !isLoading
+
+    Spacer(modifier = Modifier.height(20.dp))
+    Button(
+        enabled = enable,
+        onClick = {
+            when {
+                password != confirmPassword -> {
+                    Toast.makeText(
+                        context,
+                        "Les mots de passe ne correspondent pas",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+
+                password.length < 8 -> {
+                    Toast.makeText(
+                        context,
+                        "Le mot de passe doit contenir au moins 8 caractères",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+
+                else -> onUpdatePassword()
+            }
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(15.dp),
+    ) {
+        if (isLoading) {
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .padding(vertical = 10.dp)
+                    .fillMaxWidth(),
+            ) {
+                CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp
+                )
+
+                Text(
+                    "Chargement...",
+                    modifier = Modifier
+                        .padding(start = 10.dp),
+                )
+            }
+        } else {
+            Text(
+                "Modifier le mot de passe",
+                modifier = Modifier
+                    .padding(vertical = 10.dp),
+                fontWeight = FontWeight.Bold,
+                fontSize = MaterialTheme.typography.titleMedium.fontSize
+            )
+        }
+    }
+}
+
+
+//@SuppressLint("UnrememberedMutableInteractionSource", "UseOfNonLambdaOffsetOverload")
+//@Composable
+//fun RegisterStep3(
+//    navController: NavController,
+//    viewModel: AuthViewModel,
+//    context: Context,
+//    isAuthenticated: Boolean = false
+//) {
+//
+//    val password by viewModel.password.collectAsState()
+//
+//    var confirmPassword by remember { mutableStateOf("") }
+//    var hidePassword by remember { mutableStateOf(true) }
+//    var hideConfirmPassword by remember { mutableStateOf(true) }
+//    val configuration = LocalConfiguration.current
+//
+//    var isLoading by remember { mutableStateOf(false) }
+//
+//    val registrationError by viewModel.registrationError.collectAsStateWithLifecycle()
+//
+//    LaunchedEffect(registrationError) {
+//        if (registrationError?.containsKey("error") == true) {
+//            Toast.makeText(context, registrationError!!["error"], Toast.LENGTH_SHORT).show()
+//            viewModel.clearRegistrationError()
+//        } else if (registrationError?.containsKey("email") == true) {
+//            Toast.makeText(context, registrationError!!["email"], Toast.LENGTH_SHORT).show()
+//            navController.navigate("step1")
+//        }
+//    }
+//
+//    fun setIsLoadingFalse() {
+//        isLoading = false
+//    }
+//
+//    HandleRegistrationResult(viewModel, context, setIsLoadingFalse(), onSuccess = {
+//        navController.navigate(
+//            Screen.WelcomeScreen.route
+//        )
+//    })
+//
+//    val scrollState = rememberScrollState()
+//    val coroutineScope = rememberCoroutineScope()
+//    val keyboardHeight = WindowInsets.ime.getBottom(LocalDensity.current)
+//
+//    LaunchedEffect(key1 = keyboardHeight) {
+//        coroutineScope.launch {
+//            scrollState.scrollBy(keyboardHeight.toFloat())
+//        }
+//    }
+//
+//    Column(
+//        modifier = Modifier
+//            .imePadding()
+//            .verticalScroll(scrollState)
+//            .fillMaxSize(),
+//        verticalArrangement = Arrangement.Center
+//    ) {
+//        HeaderSection()
+//        SecurityImageSection(configuration)
+//        PasswordFieldsSection(
+//            password = password,
+//            confirmPassword = confirmPassword,
+//            hidePassword = hidePassword,
+//            hideConfirmPassword = hideConfirmPassword,
+//            onPasswordChange = { viewModel.setPassword(it) },
+//            onConfirmPasswordChange = { confirmPassword = it },
+//            onPasswordVisibilityChange = { hidePassword = !hidePassword },
+//            onConfirmPasswordVisibilityChange = { hideConfirmPassword = !hideConfirmPassword }
+//        )
+//        RegisterButton(
+//            password = password,
+//            confirmPassword = confirmPassword,
+//            context = context,
+//            isLoading = isLoading,
+//            onRegister = {
+//                isLoading = true
+//                hideKeyboard(context)
+//
+//                viewModel.setPassword(password)
+//                viewModel.register()
+//            }
+//        )
+//    }
+//}
+//
 @Composable
 fun HandleRegistrationResult(
     viewModel: AuthViewModel,
@@ -173,40 +484,40 @@ fun HandleRegistrationResult(
         }
     }
 }
-
-@Composable
-fun HeaderSection() {
-    val localContext = LocalConfiguration.current
-
-    Column(
-        modifier = Modifier.padding(
-            top = localContext.screenHeightDp.dp / 8,
-            start = 16.dp,
-            end = 16.dp,
-            bottom = 20.dp
-        )
-    ) {
-        Text(
-            text = "Créer un mot de passe",
-            style = TextStyle(
-                fontSize = 40.sp,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold,
-            ),
-            textAlign = TextAlign.Start,
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        Text(
-            text = "Choisir un mot de passe fort et sécurisé.",
-            style = TextStyle(
-                fontSize = MaterialTheme.typography.bodyLarge.fontSize,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            ),
-            textAlign = TextAlign.Start,
-        )
-    }
-}
-
+//
+//@Composable
+//fun HeaderSection() {
+//    val localContext = LocalConfiguration.current
+//
+//    Column(
+//        modifier = Modifier.padding(
+//            top = localContext.screenHeightDp.dp / 8,
+//            start = 16.dp,
+//            end = 16.dp,
+//            bottom = 20.dp
+//        )
+//    ) {
+//        Text(
+//            text = "Créer un mot de passe",
+//            style = TextStyle(
+//                fontSize = 40.sp,
+//                color = MaterialTheme.colorScheme.primary,
+//                fontWeight = FontWeight.Bold,
+//            ),
+//            textAlign = TextAlign.Start,
+//        )
+//        Spacer(modifier = Modifier.height(10.dp))
+//        Text(
+//            text = "Choisir un mot de passe fort et sécurisé.",
+//            style = TextStyle(
+//                fontSize = MaterialTheme.typography.bodyLarge.fontSize,
+//                color = MaterialTheme.colorScheme.onSurfaceVariant,
+//            ),
+//            textAlign = TextAlign.Start,
+//        )
+//    }
+//}
+//
 @Composable
 fun SecurityImageSection(configuration: Configuration) {
     Column(
@@ -231,37 +542,37 @@ fun SecurityImageSection(configuration: Configuration) {
         )
     }
 }
-
-@Composable
-fun PasswordFieldsSection(
-    password: String,
-    confirmPassword: String,
-    hidePassword: Boolean,
-    hideConfirmPassword: Boolean,
-    onPasswordChange: (String) -> Unit,
-    onConfirmPasswordChange: (String) -> Unit,
-    onPasswordVisibilityChange: () -> Unit,
-    onConfirmPasswordVisibilityChange: () -> Unit
-) {
-    Column(modifier = Modifier.padding(20.dp)) {
-        PasswordTextField(
-            password = password,
-            onPasswordChange = onPasswordChange,
-            onTrailingIconClick = onPasswordVisibilityChange,
-            hidePassword = hidePassword,
-            label = "Mot de passe"
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        PasswordTextField(
-            password = confirmPassword,
-            onPasswordChange = onConfirmPasswordChange,
-            onTrailingIconClick = onConfirmPasswordVisibilityChange,
-            hidePassword = hideConfirmPassword,
-            label = "Confirmer le mot de passe"
-        )
-    }
-}
-
+//
+//@Composable
+//fun PasswordFieldsSection(
+//    password: String,
+//    confirmPassword: String,
+//    hidePassword: Boolean,
+//    hideConfirmPassword: Boolean,
+//    onPasswordChange: (String) -> Unit,
+//    onConfirmPasswordChange: (String) -> Unit,
+//    onPasswordVisibilityChange: () -> Unit,
+//    onConfirmPasswordVisibilityChange: () -> Unit
+//) {
+//    Column(modifier = Modifier.padding(20.dp)) {
+//        PasswordTextField(
+//            password = password,
+//            onPasswordChange = onPasswordChange,
+//            onTrailingIconClick = onPasswordVisibilityChange,
+//            hidePassword = hidePassword,
+//            label = "Mot de passe"
+//        )
+//        Spacer(modifier = Modifier.height(16.dp))
+//        PasswordTextField(
+//            password = confirmPassword,
+//            onPasswordChange = onConfirmPasswordChange,
+//            onTrailingIconClick = onConfirmPasswordVisibilityChange,
+//            hidePassword = hideConfirmPassword,
+//            label = "Confirmer le mot de passe"
+//        )
+//    }
+//}
+//
 @Composable
 fun RegisterButton(
     password: String,

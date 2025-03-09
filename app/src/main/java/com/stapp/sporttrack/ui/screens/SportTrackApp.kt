@@ -1,17 +1,18 @@
-
 package com.stapp.sporttrack.ui.screens
 
 import android.content.Context
 import android.os.Build
-import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.BottomAppBarDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -27,6 +28,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -35,6 +37,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
@@ -76,26 +81,23 @@ fun HealthConnectApp(
 
     var tokenVerified by remember { mutableStateOf(false) }
     var verificationAttempted by remember { mutableStateOf(false) }
+
     var appBarTitle by remember { mutableStateOf("") }
     var showBackBtn by remember { mutableStateOf(false) }
     var showAppBar by remember { mutableStateOf(true) }
     var showBottomAppBar by remember { mutableStateOf(true) }
     var isLargeAppBar by remember { mutableStateOf(true) }
+
     val scaffoldState = remember { SnackbarHostState() }
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
 
-    // Écouter les commandes de navigation
     LaunchedEffect(mainViewModel) {
         mainViewModel.navigationCommands.collect { destination ->
-            println("receive destination on health connect app $destination")
-
-            if (destination != null) {
-                navController.navigate(destination)
-            }
+            destination?.let { navController.navigate(it) }
         }
     }
 
-    LaunchedEffect(authViewModel) {
+    LaunchedEffect(verifyToken, verificationAttempted) {
         if (verifyToken && !verificationAttempted) {
             verificationAttempted = true
             authViewModel.verifyToken()
@@ -103,74 +105,25 @@ fun HealthConnectApp(
                 result?.onSuccess { userResponse ->
                     AuthUtils.saveUserData(context, userResponse)
                     tokenVerified = true
-                }?.onFailure { exception ->
+                }?.onFailure { _ ->
                     tokenVerified = true
-                    Toast.makeText(context, exception.message, Toast.LENGTH_SHORT).show()
                 }
             }
         }
     }
 
-
     SportTrackTheme(useDarkTheme = darkTheme) {
-
         Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
                 if (showAppBar) {
-                    if (isLargeAppBar) {
-                        LargeTopAppBar(
-                            scrollBehavior = scrollBehavior,
-                            colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = Color.Transparent,
-                                scrolledContainerColor = Color.Transparent
-                            ),
-                            title = {
-                                Text(
-                                    appBarTitle,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            },
-                            navigationIcon = {
-                                if (showBackBtn) {
-                                    IconButton(onClick = { navController.popBackStack() }) {
-                                        Icon(
-                                            imageVector = Icons.Default.ChevronLeft,
-                                            contentDescription = stringResource(id = R.string.menu),
-                                            modifier = Modifier.size(30.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        )
-                    } else {
-                        TopAppBar(
-                            scrollBehavior = scrollBehavior,
-                            colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = Color.Transparent,
-                                scrolledContainerColor = Color.Transparent
-                            ),
-                            title = {
-                                Text(
-                                    appBarTitle,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            },
-                            navigationIcon = {
-                                if (showBackBtn) {
-                                    IconButton(onClick = { navController.popBackStack() }) {
-                                        Icon(
-                                            imageVector = Icons.Default.ChevronLeft,
-                                            contentDescription = stringResource(id = R.string.menu),
-                                            modifier = Modifier.size(30.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        )
-                    }
+                    HealthConnectTopAppBar(
+                        title = appBarTitle,
+                        showBackButton = showBackBtn,
+                        isLargeAppBar = isLargeAppBar,
+                        onBackButtonClick = { navController.popBackStack() },
+                        scrollBehavior = scrollBehavior
+                    )
                 } else {
                     Spacer(modifier = Modifier)
                 }
@@ -185,51 +138,99 @@ fun HealthConnectApp(
                     navController = navController,
                     modifier = Modifier
                         .padding(paddingValues)
-                        .padding(top = 5.dp)
                         .padding(horizontal = 10.dp),
-                    setAppBarTitle = { newTitle ->
-                        appBarTitle = newTitle
-                    },
-                    setShouldShowBackBtn = { shouldShow ->
-                        if (shouldShow != showBackBtn) {
-                            showBackBtn = shouldShow
-                        }
-                    },
+                    setAppBarTitle = { appBarTitle = it },
+                    setShouldShowBackBtn = { showBackBtn = it },
                     startDestination = startDestination,
-                    setShouldShowAppBar = { shouldShow ->
-                        if (shouldShow != showAppBar) {
-                            showAppBar = shouldShow
-                        }
-
-                    },
-                    setShouldShowBottomAppBar = { shouldShow ->
-                        if (shouldShow != showBottomAppBar) {
-                            showBottomAppBar = shouldShow
-
-                        }
-                    },
-                    setLargeAppBar = { isLarge ->
-                        isLargeAppBar = isLarge
-                    },
+                    setShouldShowAppBar = { showAppBar = it },
+                    setShouldShowBottomAppBar = { showBottomAppBar = it },
+                    setLargeAppBar = { isLargeAppBar = it },
                     exerciseViewModel = exerciseViewModel,
                     fusedLocationClient = fusedLocationClient,
                     authViewModel = authViewModel,
                     context = context,
                     isAuthenticated = isAuthenticated,
-                    settingsViewModel = settingsViewModel
+                    settingsViewModel = settingsViewModel,
+                    darkTheme = darkTheme
                 )
             },
             bottomBar = {
                 if (showBottomAppBar) {
-                    CustomBottomNavigationBar(
-                        navController = navController,
-                    )
+//                    Row(
+//                        modifier = Modifier
+//                            .padding(horizontal = 10.dp)
+//                            .padding(bottom =  10.dp).fillMaxWidth()
+//                    ) {
+                    CustomBottomNavigationBar(navController = navController)
+//                    }
                 }
             }
         )
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HealthConnectTopAppBar(
+    title: String,
+    showBackButton: Boolean,
+    isLargeAppBar: Boolean,
+    onBackButtonClick: () -> Unit,
+    scrollBehavior: TopAppBarScrollBehavior
+) {
+    val appBarColors = TopAppBarDefaults.topAppBarColors(
+        containerColor = Color.Transparent,
+        scrolledContainerColor = Color.Transparent
+    )
+
+    if (isLargeAppBar) {
+        LargeTopAppBar(
+            title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+            navigationIcon = {
+                if (showBackButton) {
+                    IconButton(onClick = onBackButtonClick) {
+                        Icon(
+                            imageVector = Icons.Default.ChevronLeft,
+                            contentDescription = stringResource(id = R.string.menu),
+                            modifier = Modifier.size(30.dp)
+                        )
+                    }
+                }
+            },
+            scrollBehavior = scrollBehavior,
+            colors = appBarColors
+        )
+    } else {
+        TopAppBar(
+            title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+            navigationIcon = {
+                if (showBackButton) {
+                    IconButton(onClick = onBackButtonClick) {
+                        Icon(
+                            imageVector = Icons.Default.ChevronLeft,
+                            contentDescription = stringResource(id = R.string.menu),
+                            modifier = Modifier.size(30.dp)
+                        )
+                    }
+                }
+            },
+            colors = appBarColors
+        )
+    }
+}
+
+fun Modifier.topBorder(
+    color: Color,
+    height: Float,
+) = this.drawWithContent {
+    drawContent()
+    drawLine(
+        color = color,
+        start = Offset(0f, 0f),
+        end = Offset(size.width, 0f),
+        strokeWidth = height,
+    )
+}
 
 @Composable
 fun CustomBottomNavigationBar(
@@ -240,34 +241,61 @@ fun CustomBottomNavigationBar(
     val currentDestination = currentBackStackEntry?.destination
     val bottomNavItems = listOf(
         Screen.WelcomeScreen,
-        Screen.ExerciseList,
-        Screen.ProfileScreen
+        Screen.ExerciseList,Screen.ProfileScreen
     )
+
     BottomAppBar(
-        modifier = modifier,
-        containerColor = BottomAppBarDefaults.containerColor.copy(0.5f)
-    ) {
+        containerColor = Color.Transparent,
+        contentColor = Color.Transparent,
+        windowInsets = WindowInsets.navigationBars,
+        tonalElevation = 0.dp,
+        modifier = modifier
+
+            .topBorder(MaterialTheme.colorScheme.onSurfaceVariant.copy(0.5f), 1f)
+            .clip(MaterialTheme.shapes.extraLarge),
+
+        ) {
 
         bottomNavItems.forEach { screen ->
             NavigationBarItem(
                 selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+
                 onClick = {
                     navController.navigate(screen.route) {
                         popUpTo(navController.graph.startDestinationId) {
                             saveState = true
                         }
+
                         launchSingleTop = true
 
                         restoreState = true
                     }
                 },
                 icon = {
+                    val isSelected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
                     screen.icon?.let {
-                        Icon(
-                            imageVector = it,
-                            contentDescription = stringResource(screen.titleId),
-                            Modifier.size(25.dp)
-                        )
+                        val iconModifier = Modifier.size(if (screen == Screen.ExerciseList) 50.dp else 35.dp)
+                        if (screen == Screen.ExerciseList) {
+                            val backgroundModifier = if (isSelected) {
+                                Modifier.background(MaterialTheme.colorScheme.tertiary, CircleShape)
+                            } else {
+                                Modifier.background(MaterialTheme.colorScheme.onSurface, CircleShape)
+                            }
+                            Icon(
+                                imageVector = it,
+                                contentDescription = stringResource(screen.titleId),
+                                modifier = iconModifier.then(backgroundModifier).padding(10.dp),
+                                tint = if (isSelected) MaterialTheme.colorScheme.onTertiary else MaterialTheme.colorScheme.surface
+
+
+                            )
+                        } else {
+                            Icon(
+                                imageVector = it,
+                                contentDescription = stringResource(screen.titleId),
+                                Modifier.size(35.dp)
+                            )
+                        }
                     }
                 },
                 alwaysShowLabel = false,
@@ -285,7 +313,7 @@ fun CustomBottomNavigationBar(
     }
 }
 
-@Preview()
+@Preview
 @Composable
 fun CustomBottomNavigationBarPreview() {
     CustomBottomNavigationBar(rememberNavController())

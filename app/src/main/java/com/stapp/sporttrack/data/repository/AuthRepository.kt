@@ -3,14 +3,16 @@ package com.stapp.sporttrack.data.repository
 import android.content.SharedPreferences
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.stapp.sporttrack.BuildConfig
-import com.stapp.sporttrack.data.services.AuthInterceptor
-import com.stapp.sporttrack.data.services.AuthService
 import com.stapp.sporttrack.data.models.AuthResponse
+import com.stapp.sporttrack.data.models.ChangePasswordRequest
+import com.stapp.sporttrack.data.models.DeleteAccountRequest
 import com.stapp.sporttrack.data.models.ErrorResponse
 import com.stapp.sporttrack.data.models.LoginRequest
 import com.stapp.sporttrack.data.models.UserRequest
 import com.stapp.sporttrack.data.models.UserResponse
 import com.stapp.sporttrack.data.models.UserUpdateRequest
+import com.stapp.sporttrack.data.services.AuthInterceptor
+import com.stapp.sporttrack.data.services.AuthService
 import com.stapp.sporttrack.utils.SharedPreferencesConstants
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
@@ -51,21 +53,19 @@ class AuthRepository(private val sharedPreferences: SharedPreferences) {
                 if (body != null) {
                     Result.success(body)
                 } else {
-                    // Réponse du serveur vide
                     Result.failure(Exception("Réponse du serveur vide"))
                 }
             } else {
                 val errorBody = response.errorBody()?.string()
                 if (errorBody != null) {
                     val errorResponse = Json.decodeFromString<ErrorResponse>(errorBody)
-                    Result.failure(CustomException(errorResponse)) // Utilisation de CustomException pour encapsuler ErrorResponse
+                    Result.failure(CustomException(errorResponse))
                 } else {
-                    // Erreur inconnue lors de l'inscription
                     Result.failure(CustomException(ErrorResponse(mapOf("error" to "Erreur inconnue lors de l'inscription"))))
                 }
             }
         } catch (e: Exception) {
-            // Créer un ErrorResponse pour les exceptions inattendues
+
             val errorResponse =
                 ErrorResponse(errors = mapOf("error" to (e.message ?: "Erreur inconnue")))
             Result.failure(CustomException(errorResponse))
@@ -139,6 +139,32 @@ class AuthRepository(private val sharedPreferences: SharedPreferences) {
                         errorBody ?: "Erreur inconnue lors de la vérification du token."
                     )
                 )
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun changePassword(changePasswordRequest: ChangePasswordRequest): Result<Unit> {
+        return try {
+            val response = authService.changePassword(changePasswordRequest)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Failed to change password"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun deleteAccount(password: String): Result<Unit> {
+        return try {
+            val response = authService.deleteAccount(DeleteAccountRequest(password))
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Failed to delete account with password"))
             }
         } catch (e: Exception) {
             Result.failure(e)

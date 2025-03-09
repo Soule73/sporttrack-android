@@ -146,4 +146,5 @@
     <string name="update_password">Modifier votre mot de passe</string>
     <string name="daily_details_screen">Daily Details</string>
     <string name="session_detail_screen">Historique des entrainements</string>
+    <string name="delete_account">Supprimer le compte</string>
 </resources>

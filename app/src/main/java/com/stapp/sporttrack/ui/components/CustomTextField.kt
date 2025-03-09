@@ -30,6 +30,7 @@ fun CustomTextField(
         onValueChange = onValueChange,
         colors = AppTextInputColors,
         maxLines = 1,
+        singleLine = true,
         leadingIcon = {
             if (leadingIcon != null)
                 Icon(

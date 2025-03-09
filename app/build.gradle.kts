@@ -90,9 +90,6 @@ dependencies {
     implementation(libs.retrofit)
     // Intégration avec Kotlin Serialization
     implementation(libs.retrofit2.kotlinx.serialization.converter)
-//    implementation(libs.androidx.appcompat)
-//    implementation(libs.filament.android)
-
 
     // ViewModel
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
@@ -103,10 +100,7 @@ dependencies {
     //Health connect
     implementation(libs.androidx.connect.client)
 
-    implementation(libs.mpandroidchart)
-
-    // Dependency to include Maps SDK for Android
-//    implementation(libs.play.services.maps)
+//    implementation(libs.mpandroidchart)
 
     // Google Maps Compose library
     implementation(libs.maps.compose)
@@ -120,8 +114,8 @@ dependencies {
     implementation(libs.androidx.runtime.livedata)
     implementation(libs.androidx.foundation.layout.android)
 
-
     runtimeOnly(libs.accompanist.pager)
+    implementation(libs.compose.shimmer)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

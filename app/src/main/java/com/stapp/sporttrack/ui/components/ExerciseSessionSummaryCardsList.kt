@@ -35,7 +35,7 @@ fun ExerciseSessionSummaryCardsList(
                     modifier = Modifier
                         .padding(bottom = 10.dp)
                         .fillMaxWidth()
-                        .height((configuration.screenHeightDp.dp / 13) * 5)
+                        .height(((configuration.screenHeightDp.dp / 13) * 5).coerceAtLeast(0.dp))
                 )
             }
         } else {
@@ -54,7 +54,7 @@ fun ExerciseSessionSummaryCardsList(
                         titleFontSize = 15.sp,
                         modifier = Modifier
                             .padding(vertical =  6.dp)
-                            .width((configuration.screenWidthDp.dp / 9) * 4)
+                            .width(((configuration.screenWidthDp.dp / 9) * 4).coerceAtLeast(0.dp))
                     )
                     if (i + 1 < cardsData.size) {
                         SummaryCard(
@@ -66,7 +66,7 @@ fun ExerciseSessionSummaryCardsList(
                             titleFontSize = 15.sp,
                             modifier = Modifier
                                 .padding(vertical =  6.dp)
-                                .width((configuration.screenWidthDp.dp / 9) * 4)
+                                .width(((configuration.screenWidthDp.dp / 9) * 4).coerceAtLeast(0.dp))
                         )
                     }
                 }

@@ -56,3 +56,14 @@ data class UserResponse(
     val height: Double? = null,
     val registrationDate: String? = null
 )
+
+@Serializable
+data class ChangePasswordRequest(
+    val currentPassword: String,
+    val newPassword: String
+)
+
+@Serializable
+data class DeleteAccountRequest(
+    val password: String
+)

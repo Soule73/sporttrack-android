@@ -3,15 +3,16 @@ package com.stapp.sporttrack.ui.screens.welcome
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
@@ -37,7 +38,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -48,14 +48,17 @@ import androidx.navigation.NavHostController
 import com.stapp.sporttrack.data.models.ExerciseSessionResponse
 import com.stapp.sporttrack.data.models.ExerciseStatsUnit
 import com.stapp.sporttrack.ui.components.DayItem
-import com.stapp.sporttrack.ui.components.ErrorFullScreen
-import com.stapp.sporttrack.ui.components.LoadingFullScreen
 import com.stapp.sporttrack.ui.components.WeekNavigation
 import com.stapp.sporttrack.utils.getDaysOfWeek
 import com.stapp.sporttrack.ui.navigation.Screen
 import com.stapp.sporttrack.utils.ExerciseUtils
 import com.stapp.sporttrack.viewmodel.ExerciseViewModel
-import com.stapp.sporttrack.viewmodel.toFormattedTime
+import com.valentinilk.shimmer.shimmer
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.material3.Badge
+import androidx.compose.ui.text.style.TextAlign
+import com.stapp.sporttrack.R
+import com.stapp.sporttrack.utils.toFormattedTime
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
@@ -72,6 +75,7 @@ fun TrainingDetailsScreen(
     modifier: Modifier = Modifier
 ) {
     val trainingHistory by exerciseViewModel.exerciseSessions.collectAsState()
+    val isLoading by exerciseViewModel.isLoading.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
@@ -81,77 +85,72 @@ fun TrainingDetailsScreen(
     val sortedTrainingHistory = trainingHistory.toSortedMap(compareByDescending { it })
     val dateList = sortedTrainingHistory.keys.toList()
 
-    val isDataLoaded = dateList.isNotEmpty()
-
     val currentDateFlow = remember { MutableStateFlow(dateList.firstOrNull() ?: LocalDate.now()) }
     val currentDate by currentDateFlow.collectAsState()
 
     val listState = rememberLazyListState()
 
-    val isLoading by exerciseViewModel.isLoading.collectAsStateWithLifecycle()
-
     fun onDateSelected(date: LocalDate) {
         currentDateFlow.value = date
         scope.launch {
             val index = dateList.indexOf(date)
-
             if (index >= 0) {
                 listState.animateScrollToItem(index)
             }
         }
     }
-    if (isLoading && !isDataLoaded) {
-        LoadingFullScreen(modifier)
-    } else {
-        if (isDataLoaded) {
 
-            val baseDate = remember { LocalDate.now().with(DayOfWeek.MONDAY) }
-            val configuration = LocalConfiguration.current
+    val baseDate = remember { LocalDate.now() }
 
-            val initialPage = remember {
-                val basePage = Int.MAX_VALUE / 2
-                val weekDifference = ChronoUnit.WEEKS.between(
-                    baseDate,
-                    currentDate.with(DayOfWeek.MONDAY)
-                ).toInt()
-                basePage + weekDifference
-            }
+    val initialPage = remember {
+        val basePage = Int.MAX_VALUE / 2
+        val weekDifference = ChronoUnit.WEEKS.between(
+            baseDate,
+            currentDate.with(DayOfWeek.MONDAY)
+        ).toInt()
+        basePage + weekDifference
+    }
 
-            val pagerState = rememberPagerState(
+    val pagerState = rememberPagerState(
+        initialPage = initialPage,
+        pageCount = { Int.MAX_VALUE }
+    )
+
+    Column(modifier = modifier.fillMaxSize()) {
+        BoxWithConstraints {
+            val calculatedHeight = maxHeight / 5
+
+            DateWeekSelector(
+                trainingDates = dateList.toSet(),
+                currentDate = currentDate,
+                pagerState = pagerState,
+                baseDate = baseDate,
                 initialPage = initialPage,
-                pageCount = { Int.MAX_VALUE }
+                onDateSelected = { date -> onDateSelected(date) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(calculatedHeight.coerceAtLeast(0.dp))
             )
-
-            Column(modifier = modifier.fillMaxSize()) {
-                DateWeekSelector(
-                    trainingDates = dateList.toSet(),
-                    currentDate = currentDate,
-                    pagerState = pagerState,
-                    baseDate = baseDate,
-                    initialPage = initialPage,
-                    onDateSelected = { date -> onDateSelected(date) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(configuration.screenHeightDp.dp / 5)
-                )
-
-                TrainingListView(
-                    exerciseViewModel = exerciseViewModel,
-                    trainingHistory = trainingHistory,
-                    dateList = dateList,
-                    listState = listState,
-                    navController = navController,
-                    onVisibleDateChanged = { date ->
-                        currentDateFlow.value = date
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                )
-            }
-        } else {
-            ErrorFullScreen(modifier)
         }
+
+        TrainingListView(
+            exerciseViewModel = exerciseViewModel,
+            trainingHistory = trainingHistory,
+            dateList = dateList,
+            listState = listState,
+            navController = navController,
+            onVisibleDateChanged = { date ->
+                currentDateFlow.value = date
+            },
+            isLoading = isLoading,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp))
+                .background(
+                    MaterialTheme.colorScheme.background,
+                    shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp)
+                )
+        )
     }
 }
 
@@ -163,70 +162,153 @@ fun TrainingListView(
     navController: NavController,
     onVisibleDateChanged: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
-    exerciseViewModel: ExerciseViewModel
+    exerciseViewModel: ExerciseViewModel,
+    isLoading: Boolean
 ) {
-
-    LazyColumn(
-        state = listState,
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp))
-            .background(
-                MaterialTheme.colorScheme.background,
-                shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp)
-            ),
-    ) {
-        itemsIndexed(dateList) { _, date ->
-            val sessions = trainingHistory[date] ?: emptyList()
-            val totalDuration = sessions.sumOf { it.duration ?: 0 }
-            val totalCaloriesBurnedRecord =
-                sessions.sumOf { it.caloriesBurned ?: 0.0 }
-            val formattedTotalDuration = toFormattedTime(totalDuration)
-
-            Card(
-                modifier = Modifier
+    val shimmerModifier = if (isLoading) {
+        Modifier.shimmer()
+    } else {
+        Modifier
+    }
+    when{
+        isLoading ->{
+        LazyColumn(
+            state = listState,
+            modifier = modifier
+        ) {
+            loadingShimmerLayout(shimmerModifier)
+        }
+        }
+        dateList.isNotEmpty()->{
+            LazyColumn(
+                state = listState,
+                modifier = modifier
                     .fillMaxWidth()
-                    .padding(vertical = 6.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = CardDefaults.cardColors().containerColor.copy(0.3f)
-                )
+                    .clip(RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp))
+                    .background(
+                        MaterialTheme.colorScheme.background,
+                        shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp)
+                    ),
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp)
-                ) {
-                    DailyDetailHeader(
-                        date = date,
-                        formattedTotalDuration = formattedTotalDuration,
-                        totalCaloriesBurnedRecord = totalCaloriesBurnedRecord
-                    )
+                itemsIndexed(dateList) { _, date ->
+                    val sessions = trainingHistory[date] ?: emptyList()
+                    val totalDuration = sessions.sumOf { it.duration ?: 0 }
+                    val totalCaloriesBurnedRecord =
+                        sessions.sumOf { it.caloriesBurned ?: 0.0 }
+                    val formattedTotalDuration = toFormattedTime(totalDuration)
 
-                    sessions.forEach { session ->
-                        TrainingItem(session) {
-                            exerciseViewModel.loadExerciseSessionById(session.sessionId)
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 6.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = CardDefaults.cardColors().containerColor.copy(0.3f)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp)
+                        ){
+                            val sortedSessions = sessions.sortedByDescending { it.startDate }
 
-                            navController.navigate(Screen.ExerciseSessionDetail.route)
+                            DailyDetailHeader(date, formattedTotalDuration, totalCaloriesBurnedRecord)
+
+                            sortedSessions.forEach { session ->
+                                TrainingItem(session) {
+                                    exerciseViewModel.loadExerciseSessionById(session.sessionId)
+                                    navController.navigate("${Screen.ExerciseSessionDetail.route}/back")
+                                }
+                            }
                         }
                     }
                 }
             }
+            LaunchedEffect(listState) {
+                snapshotFlow { listState.firstVisibleItemIndex }
+                    .distinctUntilChanged()
+                    .collect { index ->
+                        val visibleDate = dateList.getOrNull(index)
+                        if (visibleDate != null) {
+                            onVisibleDateChanged(visibleDate)
+                        }
+                    }
+            }
         }
-    }
-
-    LaunchedEffect(listState) {
-        snapshotFlow { listState.firstVisibleItemIndex }
-            .distinctUntilChanged()
-            .collect { index ->
-                val visibleDate = dateList.getOrNull(index)
-
-                println("Date visible : $visibleDate , Index : $index")
-                if (visibleDate != null) {
-                    onVisibleDateChanged(visibleDate)
+            else ->{
+                Column(
+                    modifier = modifier,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.training_history),
+                        contentDescription = "Training History",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(50.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        text = "Aucun historique d'entraînements pour le moment",
+                        style = MaterialTheme.typography.titleMedium,
+                        textAlign = TextAlign.Center,
+                    )
                 }
             }
     }
 
+}
+
+private fun LazyListScope.loadingShimmerLayout(modifier: Modifier){
+    items(5) {
+        Card(
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(vertical = 6.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = CardDefaults.cardColors().containerColor.copy(0.3f)
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+            ) {
+                ShimmerDailyDetailHeader()
+                ShimmerTrainingItem()
+                ShimmerTrainingItem()
+                ShimmerTrainingItem()
+            }
+        }
+    }
+}
+
+@Composable
+fun ShimmerTrainingItem() {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(100.dp)
+            .padding(5.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = CardDefaults.cardColors().containerColor.copy(0.5f)
+        )
+    ) {
+    }
+}
+
+@Composable
+fun ShimmerDailyDetailHeader() {
+    Row(
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(10.dp)
+            .padding(8.dp),
+    ) {
+    }
 }
 
 
@@ -303,10 +385,20 @@ fun TrainingItem(session: ExerciseSessionResponse, onClick: () -> Unit) {
                     .padding(5.dp),
             )
             Column(modifier = Modifier.padding(start = 16.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                 Text(
                     text = stringResource(exercise.getTitle()),
                     style = MaterialTheme.typography.titleMedium
                 )
+                 if(session.isAuto){
+                     Badge {
+                         Text(text = "Auto")
+                     }
+                 }
+                }
                 Spacer(modifier = Modifier.height(5.dp))
 
                 Row(
@@ -383,7 +475,7 @@ fun DateWeekSelector(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(2.dp)
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 items(daysOfWeek) { day ->
                     DayItem(

@@ -58,11 +58,10 @@ import com.stapp.sporttrack.ui.components.LoadingFullScreen
 import com.stapp.sporttrack.ui.theme.SportTrackTheme
 import com.stapp.sporttrack.utils.ExerciseUtils
 import com.stapp.sporttrack.utils.SharedPreferencesConstants
+import com.stapp.sporttrack.utils.formatDateTimeRange
+import com.stapp.sporttrack.utils.toFormattedTime
 import com.stapp.sporttrack.viewmodel.ExerciseViewModel
 import com.stapp.sporttrack.viewmodel.ExerciseViewModelFactory
-import com.stapp.sporttrack.viewmodel.toFormattedTime
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 
@@ -247,12 +246,13 @@ fun ExerciseDetailHeader(
                 contentDescription = stringResource(title),
                 modifier = Modifier.size(40.dp)
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = duration,
-                color = MaterialTheme.colorScheme.surface,
-                fontWeight = FontWeight.Bold,
-                fontSize = MaterialTheme.typography.headlineLarge.fontSize
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    color = MaterialTheme.colorScheme.surface,
+                    fontWeight = FontWeight.Bold,
+                )
             )
         }
         Column(
@@ -265,9 +265,8 @@ fun ExerciseDetailHeader(
                 color = MaterialTheme.colorScheme.surface,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier
-                    .padding(16.dp)
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = date,
                 color = MaterialTheme.colorScheme.surface,
@@ -304,99 +303,70 @@ fun ExerciseDetailItem(
     }
 }
 
-
 fun generateSummaryCardsData(exerciseSession: ExerciseSessionResponse?): List<ExerciseSummaryCardData> {
     val summaryCardsData = mutableListOf<ExerciseSummaryCardData>()
 
-    if (exerciseSession != null) {
-
-        summaryCardsData.add(
-            ExerciseSummaryCardData(
-                title = "Distance",
-                value = exerciseSession.distance.toString(),
-                unit = ExerciseStatsUnit.DISTANCE
-            )
-        )
-
-
-        if (exerciseSession.averageSpeed != 0.0) {
-            summaryCardsData.add(
-                ExerciseSummaryCardData(
-                    title = "Vitesse moyenne",
-                    value = exerciseSession.averageSpeed.toString(),
-                    unit = ExerciseStatsUnit.SPEED
+    exerciseSession?.let {
+        summaryCardsData.apply {
+            if (it.distance != 0.0) {
+                add(
+                    ExerciseSummaryCardData(
+                        title = "Distance",
+                        value = String.format(Locale.getDefault(), "%.2f", it.distance),
+                        unit = ExerciseStatsUnit.DISTANCE
+                    )
                 )
-            )
-        }
+            }
 
-        if (exerciseSession.stepCount != 0) {
-            summaryCardsData.add(
-                ExerciseSummaryCardData(
-                    title = "Pas",
-                    value = exerciseSession.stepCount.toString()
+            if (it.averageSpeed != 0.0) {
+                add(
+                    ExerciseSummaryCardData(
+                        title = "Vitesse moyenne",
+                        value = String.format(Locale.getDefault(), "%.2f", it.averageSpeed),
+                        unit = ExerciseStatsUnit.SPEED
+                    )
                 )
-            )
-        }
-
-        if (exerciseSession.cadence != 0.0) {
-            summaryCardsData.add(
-                ExerciseSummaryCardData(
-                    title = "Cadence",
-                    value = exerciseSession.cadence.toString(),
-                    unit = ExerciseStatsUnit.CADENCE
+            }
+            if (it.stepCount != 0) {
+                add(ExerciseSummaryCardData(title = "Pas", value = it.stepCount.toString()))
+            }
+            if (it.cadence != 0.0) {
+                add(
+                    ExerciseSummaryCardData(
+                        title = "Cadence",
+                        value = String.format(Locale.getDefault(), "%.2f", it.cadence),
+                        unit = ExerciseStatsUnit.CADENCE
+                    )
                 )
-            )
-        }
-
-        if (exerciseSession.rhythm != 0.0) {
-            summaryCardsData.add(
-                ExerciseSummaryCardData(
-                    title = "Rythme",
-                    value = exerciseSession.rhythm.toString(),
-                    unit = ExerciseStatsUnit.RHYTHM
+            }
+            if (it.rhythm != 0.0) {
+                add(
+                    ExerciseSummaryCardData(
+                        title = "Rythme",
+                        value = String.format(Locale.getDefault(), "%.2f", it.rhythm),
+                        unit = ExerciseStatsUnit.RHYTHM
+                    )
                 )
-            )
-        }
-
-        if (exerciseSession.slope != 0.0) {
-            summaryCardsData.add(
-                ExerciseSummaryCardData(
-                    title = "Pente",
-                    value = exerciseSession.slope.toString(),
-                    unit = ExerciseStatsUnit.SLOPE
+            }
+            if (it.slope != 0.0) {
+                add(
+                    ExerciseSummaryCardData(
+                        title = "Pente",
+                        value = String.format(Locale.getDefault(), "%.2f", it.slope),
+                        unit = ExerciseStatsUnit.SLOPE
+                    )
                 )
-            )
+            }
         }
-
         summaryCardsData.add(
             ExerciseSummaryCardData(
                 title = "Calories brûlées",
-                value = exerciseSession.caloriesBurned.toString(),
+                value = String.format(Locale.getDefault(), "%.2f", exerciseSession.caloriesBurned),
                 unit = ExerciseStatsUnit.CALORIES
             )
         )
-
     }
     return summaryCardsData
-}
-
-fun formatDateTimeRange(start: LocalDateTime?, end: LocalDateTime?): String {
-    if (start == null || end == null) return ""
-
-    val dayFormatter = DateTimeFormatter.ofPattern("EEE dd MMM yyyy", Locale.FRENCH)
-    val timeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.FRENCH)
-
-    return if (start.toLocalDate() == end.toLocalDate()) {
-
-        "${start.format(dayFormatter)} ${start.format(timeFormatter)} - ${end.format(timeFormatter)}"
-    } else {
-
-        "${start.format(dayFormatter)} ${start.format(timeFormatter)} à ${end.format(dayFormatter)} ${
-            end.format(
-                timeFormatter
-            )
-        }"
-    }
 }
 
 @Preview(showBackground = true)

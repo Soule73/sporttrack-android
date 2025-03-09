@@ -55,6 +55,7 @@ fun HealthConnectNavigation(
     context: Context,
     isAuthenticated: Boolean,
     settingsViewModel: SettingsViewModel,
+    darkTheme: Boolean,
 ) {
 
     NavHost(navController = navController, startDestination = startDestination) {
@@ -74,7 +75,6 @@ fun HealthConnectNavigation(
         }
 
         composable(Screen.LoginScreen.route) {
-
             setupScreen(Screen.LoginScreen)
 
             LoginScreen(
@@ -84,7 +84,6 @@ fun HealthConnectNavigation(
             )
         }
         composable(Screen.RegisterScreen.route) {
-
             setupScreen(Screen.RegisterScreen)
 
             RegisterStep0(
@@ -92,7 +91,6 @@ fun HealthConnectNavigation(
             )
         }
         composable(Screen.RegisterScreenStep1.route) {
-
             setupScreen(Screen.RegisterScreenStep1)
             RegisterStep1(
                 navController = navController,
@@ -101,7 +99,6 @@ fun HealthConnectNavigation(
             )
         }
         composable(Screen.RegisterScreenStep2.route) {
-
             setupScreen(Screen.RegisterScreenStep2)
 
             RegisterStep2(
@@ -161,7 +158,6 @@ fun HealthConnectNavigation(
             PrivacyPolicyScreen(modifier = modifier)
         }
         composable(Screen.ExerciseList.route) {
-
             setupScreen(Screen.ExerciseList)
 
             ExerciseListScreen(
@@ -170,17 +166,14 @@ fun HealthConnectNavigation(
                 modifier = modifier
             )
         }
-        composable(Screen.ExerciseSessionDetail.route) {
-
+        composable("${Screen.ExerciseSessionDetail.route}/{destination}",arguments = listOf(navArgument("destination") { type = NavType.StringType })) {backStackEntry ->
+            val destination = backStackEntry.arguments?.getString("destination")
             setupScreen(Screen.ExerciseSessionDetail)
             ExerciseSessionDetailScreen(
                 modifier = modifier,
                 onBackClick = {
-                    val previousRoute = navController.previousBackStackEntry?.destination?.route
-                    if (previousRoute == Screen.ExerciseSession.route) {
-                        navController.navigate(Screen.ExerciseList.route) {
-                            popUpTo(Screen.ExerciseSession.route) { inclusive = true }
-                        }
+                    if (!destination.isNullOrEmpty() && destination == Screen.ExerciseList.route) {
+                        navController.navigate(Screen.ExerciseList.route)
                     } else {
                         navController.popBackStack()
                     }
@@ -192,10 +185,10 @@ fun HealthConnectNavigation(
         }
         composable(Screen.ProfileScreen.route) {
 
-            setupScreen(Screen.ProfileScreen)
-
+            setupScreen(Screen.ProfileScreen,"")
             AuthUtils.getUserData(context)?.let { it1 -> authViewModel.setUserData(it1) }
             ProfileScreen(
+                context = context,
                 navController = navController,
                 authViewModel = authViewModel,
                 modifier = modifier,
@@ -219,8 +212,9 @@ fun HealthConnectNavigation(
                 exerciseViewModel = exerciseViewModel,
                 fusedLocationClient = fusedLocationClient,
                 modifier = modifier,
+                darkTheme = darkTheme,
                 onClickFinished = {
-                    navController.navigate(Screen.ExerciseSessionDetail.route)
+                    navController.navigate("${Screen.ExerciseSessionDetail.route}/${Screen.ExerciseList.route}")
                 }
             )
         }

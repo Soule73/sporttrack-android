@@ -1,5 +1,6 @@
 package com.stapp.sporttrack.ui
 
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -18,6 +19,9 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.stapp.sporttrack.data.repository.ExerciseRepository
@@ -30,9 +34,23 @@ import com.stapp.sporttrack.viewmodel.ExerciseViewModel
 import com.stapp.sporttrack.viewmodel.AuthViewModel
 import com.stapp.sporttrack.viewmodel.AuthViewModelFactory
 import com.stapp.sporttrack.viewmodel.ExerciseViewModelFactory
+import com.stapp.sporttrack.viewmodel.ExerciseViewModelHolder
+import com.stapp.sporttrack.workers.StepDetectionWorker
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
+
+private fun scheduleStepDetectionWorker(context: Context) {
+    val workRequest = PeriodicWorkRequestBuilder<StepDetectionWorker>(15, TimeUnit.MINUTES)
+        .build()
+
+    WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+        "StepDetectionWorker",
+        ExistingPeriodicWorkPolicy.KEEP,
+        workRequest
+    )
+}
 
 class MainActivity : ComponentActivity() {
     private val mainViewModel: MainViewModel by viewModels()
@@ -86,10 +104,10 @@ class MainActivity : ComponentActivity() {
                     ViewModelProvider(
                         viewModelStoreOwner,
                         ExerciseViewModelFactory(exerciseRepository)
-                    )[ExerciseViewModel::class.java].apply {
-                        initializeFromSharedState()
-                    }
+                    )[ExerciseViewModel::class.java]
                 }
+
+                ExerciseViewModelHolder.instance = exerciseViewModel
 
                 HealthConnectApp(
                     context = this,
@@ -106,6 +124,8 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+
+        scheduleStepDetectionWorker(this)
 
     }
 

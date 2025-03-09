@@ -1,10 +1,9 @@
 package com.stapp.sporttrack.ui.screens.welcome
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -12,11 +11,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,9 +30,11 @@ import com.stapp.sporttrack.ui.components.SummaryCard
 import com.stapp.sporttrack.ui.components.WeeklyTrainingCalendar
 import com.stapp.sporttrack.ui.navigation.Screen
 import com.stapp.sporttrack.ui.screens.exercise.CustomListItem
+import com.stapp.sporttrack.utils.toFormattedTime
 import com.stapp.sporttrack.viewmodel.ExerciseViewModel
-import com.stapp.sporttrack.viewmodel.toFormattedTime
+import com.valentinilk.shimmer.shimmer
 import java.time.LocalDate
+import java.util.Locale
 
 /**
  * Welcome screen shown when the app is first launched.
@@ -63,28 +66,13 @@ fun WelcomeScreen(
     val configuration = LocalConfiguration.current
     LazyColumn(modifier = modifier) {
         item {
-            if (isLoading) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    SummaryCard(
-                        title = "",
-                        value = "",
-                        modifier = Modifier
-                            .padding(6.dp)
-                            .width((configuration.screenWidthDp.dp / 9) * 4)
-                    )
-                    SummaryCard(
-                        title = "",
-                        value = "",
-                        modifier = Modifier
-                            .padding(6.dp)
-                            .width((configuration.screenWidthDp.dp / 9) * 4)
-                    )
-                }
+            if (isLoading && weeklyExerciseStats == null) {
+                ShimmerLoadingSummaryCardRow(configuration)
 
-            } else {
+                ShimmerLoadingSummaryCardRow(configuration)
+                ShimmerLoadingSummaryCardRow(configuration)
+
+            } else if (weeklyExerciseStats != null) {
                 weeklyExerciseStats?.let { stats ->
                     val summaryCardsData = listOf(
                         ExerciseSummaryCardData(
@@ -95,7 +83,7 @@ fun WelcomeScreen(
                         ),
                         ExerciseSummaryCardData(
                             title = "Calories brûlées",
-                            value = stats.totalCalories.toString(),
+                            value = String.format(Locale.getDefault(), "%.2f", stats.totalCalories),
                             unit = ExerciseStatsUnit.CALORIES,
                             icon = R.drawable.ic_local_dining,
                             color = caloriesColor,
@@ -181,6 +169,33 @@ fun WelcomeScreen(
                 onClick = {
                     navController.navigate(Screen.TrainingDetailsScreen.route)
                 }
+            )
+        }
+    }
+}
+
+@Composable
+fun ShimmerLoadingSummaryCardRow(configuration: Configuration) {
+    CompositionLocalProvider(LocalLayoutDirection provides LocalLayoutDirection.current) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            SummaryCard(
+                title = "",
+                value = "",
+                modifier = Modifier
+                    .padding(6.dp)
+                    .width((configuration.screenWidthDp.dp / 9) * 4)
+                    .shimmer()
+            )
+            SummaryCard(
+                title = "",
+                value = "",
+                modifier = Modifier
+                    .padding(6.dp)
+                    .width((configuration.screenWidthDp.dp / 9) * 4)
+                    .shimmer()
             )
         }
     }

@@ -108,6 +108,7 @@ class ExerciseRepository(private val sharedPreferences: SharedPreferences) {
         } catch (e: Exception) {
             val errorResponse =
                 ErrorResponse(errors = mapOf("error" to (e.message ?: "Erreur inconnue")))
+            println("Erreur lors de la récupération des sessions d'exercice : ${e.message}")
             Result.failure(CustomException(errorResponse))
         }
     }

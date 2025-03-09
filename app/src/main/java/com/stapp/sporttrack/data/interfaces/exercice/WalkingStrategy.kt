@@ -15,14 +15,16 @@ class WalkingStrategy : ExerciseStrategy {
     override fun getImage() = R.drawable.exercise_walking_image
     private val metValue = 3.8 // MET pour la marche
 
+    private val averageStepLength = 0.75
+
     override fun calculateCalories(elapsedTime: Long, weightInKg: Double): Double {
         //val durationInMinutes = elapsedTime / 60000
         //val calories = (metValue * 3.5 * weightInKg * durationInMinutes / 200)
         //return Math.round(calories * 100.0) / 100.0
 
-        val durationInSeconds = elapsedTime / 1000
-        val calories = (metValue * (3.5 / 60) * weightInKg * (durationInSeconds) / 200)
-        return Math.round(calories * 100.0) / 100.0
+        val durationInSeconds = elapsedTime / 1000.0
+        val calories = (metValue * (3.5 / 60) * weightInKg * durationInSeconds / 200)
+        return (calories * 100) / 100.0
     }
 
     override fun calculateIncline(startLocation: LatLng?, endLocation: LatLng?) = 0.0
@@ -45,19 +47,19 @@ class WalkingStrategy : ExerciseStrategy {
                 totalDurationInSeconds / 60,
                 totalDurationInSeconds % 60
             )
-        val distanceInKm = totalDistance / 1000
+
+        // Calcul de la distance basée sur le nombre de pas et la longueur de foulée moyenne
+        val distanceFromStepsInMeters = stepCount * averageStepLength
+        val distanceInKm = distanceFromStepsInMeters / 1000.0
         stats.totalDistance =
-            if (distanceInKm < 0.01) 0.0 else Math.round(distanceInKm * 100.0) / 100.0
-
-        val speed = if (totalDurationInSeconds > 0) {
-            (stats.totalDistance / (totalDurationInSeconds / 3600.0)) // km/h
-        } else {
-            0.0
-        }
-        stats.averageSpeed = Math.round(speed * 100.0) / 100.0
-
+            if (distanceInKm < 0.01) 0.0 else (Math.round(distanceInKm * 100.0) / 100.0)
+        // Calcul de la vitesse moyenne basée sur la distance obtenue via les pas
+        stats.averageSpeed = if (totalDurationInSeconds > 0) {
+            val speed = (distanceFromStepsInMeters / 1000.0) / (totalDurationInSeconds / 3600.0)
+            (Math.round(speed * 100.0) / 100.0)
+        } else 0.0
         stats.stepCount = stepCount
-        stats.calories = calculateCalories(elapsedTime)
+        stats.calories = calculateCalories(elapsedTime, weightInKg ?: 70.0)
 
         return stats
     }

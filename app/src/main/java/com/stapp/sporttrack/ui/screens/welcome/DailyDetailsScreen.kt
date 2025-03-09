@@ -39,7 +39,7 @@ import com.stapp.sporttrack.ui.screens.exercise.ExerciseSummaryGrid
 import com.stapp.sporttrack.ui.theme.SportTrackTheme
 import com.stapp.sporttrack.utils.SharedPreferencesConstants
 import com.stapp.sporttrack.viewmodel.ExerciseViewModel
-import com.stapp.sporttrack.viewmodel.toFormattedTime
+import com.stapp.sporttrack.utils.toFormattedTime
 import java.time.LocalDate
 import java.util.Locale
 
@@ -62,7 +62,8 @@ fun DailyDetailsScreen(
         LoadingFullScreen(modifier = modifier)
     } else {
         dailyExerciseDetails?.let { details ->
-            LazyColumn(modifier = modifier.fillMaxSize()
+            LazyColumn(modifier = modifier
+                .fillMaxSize()
                 .clip(RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp))
                 .background(
                     MaterialTheme.colorScheme.background,
@@ -122,8 +123,8 @@ fun DailyDetailsScreen(
                             ) {
                                 details.sessions.forEach { session ->
                                     TrainingItem(session) {
-                                        exerciseViewModel.loadExerciseSessionById(session.sessionId)
-                                        navController.navigate(Screen.ExerciseSessionDetail.route)
+                                        exerciseViewModel.setSelectedSession(session)
+                                        navController.navigate("${Screen.ExerciseSessionDetail.route}/back")
                                     }
                                 }
                             }
